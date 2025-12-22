@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FineDataLink 检测任务 - 全方案整合版</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* --- 1. 基础全局样式 --- */
+        :root {
+            --primary-color: #3b5de7;
+            --bg-color: #f0f2f5;
+            --border-color: #e8e8e8;
+            --text-main: #333;
+            --text-sub: #666;
+            --chip-hover-bg: #e6f7ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        body { background-color: var(--bg-color); height: 100vh; overflow: hidden; display: flex; color: var(--text-main); font-size: 14px; }
+
+        /* 左侧侧边栏 (视觉还原) */
+        .sidebar-icons { width: 50px; background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; padding-top: 15px; }
+        .sidebar-menu { width: 70px; background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding-top: 10px; }
+        .icon-item, .menu-item { display: flex; align-items: center; justify-content: center; color: #666; cursor: pointer; }
+        .icon-item { width: 36px; height: 36px; border-radius: 6px; margin-bottom: 8px; font-size: 16px; }
+        .menu-item { flex-direction: column; height: 50px; font-size: 12px; margin-bottom: 5px; }
+        .icon-item.active { background: #e6f7ff; color: var(--primary-color); }
+        .menu-item.active { background: #f5f7fa; border-right: 2px solid var(--primary-color); color: var(--primary-color); }
+        .app-logo { color: var(--primary-color); font-size: 20px; margin-bottom: 20px; }
+
+        .main-container { flex: 1; display: flex; flex-direction: column; }
+        .top-header { height: 56px; background: #fff; border-bottom: 1px solid var(--border-color); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+        .content-body { flex: 1; padding: 20px; overflow-y: auto; display: flex; justify-content: center; }
+        .card { background: #fff; width: 100%; max-width: 1200px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+
+        /* --- 2. 核心区布局 --- */
+        .section { padding: 20px 30px; border-bottom: 1px solid var(--border-color); }
+        .section-title { font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* 左右布局：列表+标签区 */
+        .db-table-layout { display: flex; border: 1px solid var(--border-color); border-radius: 4px; height: 300px; margin-left: 80px; margin-top: 10px; }
+        .db-list { width: 200px; border-right: 1px solid var(--border-color); background: #fafafa; padding: 10px 0; }
+        .db-item { padding: 8px 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #666; border-left: 3px solid transparent; }
+        .db-item.active { background: #eef2f8; border-left-color: var(--primary-color); color: var(--primary-color); font-weight: 500; }
+        .table-area { flex: 1; padding: 15px; display: flex; align-content: flex-start; flex-wrap: wrap; gap: 10px; overflow-y: auto; }
+
+        /* --- 3. Chip 组件通用样式 --- */
+        .table-chip {
+            display: inline-flex;
+            align-items: center;
+            height: 32px;
+            padding: 0 10px;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 13px;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            max-width: 220px;
+        }
+        .table-chip:hover { border-color: #40a9ff; background-color: var(--chip-hover-bg); }
+        .chip-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px; }
+        .icon-btn { cursor: pointer; font-size: 12px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: #999; }
+        .icon-btn:hover { color: var(--primary-color); }
+        .icon-btn.active-filter { color: var(--primary-color); }
+
+        /* --- 下拉菜单通用样式 --- */
+        .dropdown-menu { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #eee; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 4px; display: none; flex-direction: column; z-index: 100; min-width: 100px; padding: 4px 0; margin-top: 2px; }
+        .dropdown-menu.show { display: flex; }
+        .menu-option { padding: 8px 12px; font-size: 12px; cursor: pointer; display: flex; gap: 8px; align-items: center; }
+        .menu-option:hover { background: #f5f7fa; color: var(--primary-color); }
+        .menu-option.delete:hover { color: #ff4d4f; background: #fff1f0; }
+
+        /* ==================================================== */
+        /* === 方案样式差异化定义 (关键部分) === */
+        /* ==================================================== */
+
+        /* --- 方案一：传统下拉 (Outside Filter + Arrow) --- */
+        .scheme-1 .chip-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; }
+
+        /* --- 方案二：悬停外扩 (Hover Expansion) --- */
+        .scheme-2 .delete-icon-wrapper { width: 0; overflow: hidden; opacity: 0; transition: all 0.2s ease-out; }
+        .scheme-2:hover .delete-icon-wrapper { width: 22px; opacity: 1; border-left: 1px solid transparent; } /* 产生位移 */
+        
+        /* --- 方案三：常驻分割下拉 (Split Icon & Arrow) --- */
+        .scheme-3 .chip-actions {
+            display: flex;
+            align-items: center;
+            border-left: 1px solid transparent; /* 占位，或者加 #f0f0f0 做分割 */
+            padding-left: 4px;
+            margin-left: 4px;
+        }
+        /* 可选：加个竖线分割更有“功能区分”的感觉 */
+        .scheme-3 .dropdown-split { 
+            border-left: 1px solid #e8e8e8; margin-left: 4px; padding-left: 4px; height: 16px; display: flex; align-items: center; 
+        }
+
+        /* --- 方案四：智能闪避内压 (Smart Overlay) --- */
+        .scheme-4 { position: relative; padding-right: 8px; overflow: hidden; }
+        
+        /* 方案四-过滤图标：悬停时向左闪避 */
+        .scheme-4 .icon-filter {
+            position: relative; 
+            z-index: 10;
+            transition: transform 0.2s ease;
+            flex-shrink: 0; /* 防止被挤压 */
+        }
+        .scheme-4:hover .icon-filter {
+            transform: translateX(-24px); /* 向左移动，为删除按钮腾位置 */
+            background-color: var(--chip-hover-bg); /* 加背景遮挡文字，避免重叠 */
+            box-shadow: -4px 0 6px var(--chip-hover-bg); /* 左侧柔和过渡 */
+            border-radius: 2px;
+        }
+
+        /* 方案四-删除按钮：悬停时淡入 */
+        .scheme-4 .delete-overlay {
+            position: absolute;
+            right: 0; top: 0; bottom: 0;
+            width: 26px;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 20;
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all 0.2s ease;
+            pointer-events: none;
+            background-color: var(--chip-hover-bg); /* 背景同色，遮挡原位置元素 */
+            box-shadow: -2px 0 4px rgba(0,0,0,0.05); /* 左侧轻微阴影 */
+        }
+        .scheme-4:hover .delete-overlay { opacity: 1; transform: translateX(0); pointer-events: auto; }
+
+        /* --- 切换器样式 --- */
+        .switcher { display: flex; border: 1px solid var(--primary-color); border-radius: 4px; overflow: hidden; }
+        .s-btn { background: #fff; color: var(--primary-color); border: none; padding: 6px 12px; font-size: 12px; cursor: pointer; border-right: 1px solid var(--primary-color); transition: 0.2s; }
+        .s-btn:last-child { border-right: none; }
+        .s-btn.active { background: var(--primary-color); color: #fff; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+    <main class="main-container">
+        <header class="top-header">
+            <div style="font-weight:500;"><i class="fa-solid fa-arrow-left"></i> &nbsp; 检测任务编辑</div>
+            <div>Admin <i class="fa-solid fa-caret-down"></i></div>
+        </header>
+
+        <div class="content-body">
+            <div class="card">
+                <div class="section">
+                    <div class="section-title">
+                        检测对象配置
+                        <div class="switcher">
+                            <button class="s-btn" onclick="setScheme(1)">方案一 (纯下拉)</button>
+                            <button class="s-btn" onclick="setScheme(2)">方案二 (悬停位移)</button>
+                            <button class="s-btn" onclick="setScheme(3)">方案三 (分离常驻)</button>
+                            <button class="s-btn active" onclick="setScheme(4)">方案四 (智能平移)</button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; margin-top:20px;">
+                        <label style="width:80px; font-weight:500;">数据表:</label>
+                        <div class="db-table-layout" style="flex:1;">
+                            <ul class="db-list">
+                                <li class="db-item active"><i class="fa-solid fa-database"></i> 交易核心库</li>
+                                <li class="db-item"><i class="fa-solid fa-database"></i> 归档数据库</li>
+                            </ul>
+                            <div class="table-area" id="chipContainer">
+                                <!-- Chips will render here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-left:80px; margin-top:10px; color:#999; font-size:12px;">
+                        <i class="fa-solid fa-circle-info"></i> 说明：<br>
+                        方案一：所有操作在下拉菜单中。<br>
+                        方案二：悬停时向右扩宽显示删除（会导致抖动）。<br>
+                        方案三：过滤图标始终可见，删除藏在右侧小箭头下拉中。<br>
+                        方案四：悬停时过滤图标左移避让，删除按钮浮现（无抖动，推荐）。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const tables = [
+            { name: "订单详情表_Main", filtered: true },
+            { name: "用户基础信息", filtered: false }, 
+            { name: "产品库存流水_2023_Q4_Backup", filtered: true }, // 长文本测试
+            { name: "活动配置", filtered: false },
+            { name: "日志表", filtered: false },
+        ];
+
+        let currentScheme = 4;
+
+        function setScheme(n) {
+            currentScheme = n;
+            document.querySelectorAll('.s-btn').forEach((b, i) => b.classList.toggle('active', i + 1 === n));
+            render();
+        }
+
+        // 全局点击关闭下拉
+        window.addEventListener('click', (e) => {
+            if (!e.target.matches('.dropdown-trigger')) {
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+            }
+        });
+
+        function toggleMenu(e, id) {
+            e.stopPropagation();
+            document.querySelectorAll('.dropdown-menu').forEach(m => {
+                if(m.id !== 'menu-'+id) m.classList.remove('show');
+            });
+            document.getElementById('menu-'+id).classList.toggle('show');
+        }
+
+        function render() {
+            const container = document.getElementById('chipContainer');
+            container.innerHTML = '';
+            
+            tables.forEach((t, i) => {
+                const el = document.createElement('div');
+                el.className = `table-chip scheme-${currentScheme}`;
+                el.title = t.name;
+
+                // --- 方案一：下拉聚合 (Outside: Filter Icon if active + Arrow) ---
+                if (currentScheme === 1) {
+                    const filterIcon = t.filtered ? `<i class="fa-solid fa-filter icon-btn active-filter"></i>` : '';
+                    el.innerHTML = `
+                        <span class="chip-name">${t.name}</span>
+                        <div class="chip-actions">
+                            ${filterIcon}
+                            <div style="position:relative">
+                                <i class="fa-solid fa-caret-down icon-btn dropdown-trigger" onclick="toggleMenu(event, ${i})"></i>
+                                <div class="dropdown-menu" id="menu-${i}">
+                                    <div class="menu-option"><i class="fa-solid fa-filter"></i> 数据过滤</div>
+                                    <div class="menu-option delete"><i class="fa-regular fa-trash-can"></i> 删除</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // --- 方案二：悬停外扩 (Layout Shift) ---
+                else if (currentScheme === 2) {
+                    const filterClass = t.filtered ? 'active-filter' : 'icon-btn';
+                    const filterStyle = t.filtered ? '' : 'color:#ccc';
+                    el.innerHTML = `
+                        <span class="chip-name">${t.name}</span>
+                        <i class="fa-solid fa-filter icon-btn ${filterClass}" style="${filterStyle}"></i>
+                        <div class="delete-icon-wrapper">
+                            <i class="fa-regular fa-trash-can icon-btn" style="color:#ff4d4f; margin-left:4px;"></i>
+                        </div>
+                    `;
+                }
+
+                // --- 方案三：分离常驻 (Filter + Separator + Arrow) ---
+                else if (currentScheme === 3) {
+                    const filterClass = t.filtered ? 'active-filter' : '';
+                    // 即使没激活过滤，图标也常常显示（或者显示灰色）以便告知这里有过滤功能
+                    // 这里设定：没过滤显示灰色
+                    
+                    el.innerHTML = `
+                        <span class="chip-name">${t.name}</span>
+                        <div class="chip-actions">
+                            <!-- 过滤图标始终展示 -->
+                            <i class="fa-solid fa-filter icon-btn ${filterClass}" style="${t.filtered?'':'color:#ccc'}"></i>
+                            
+                            <!-- 分割线与下拉箭头 -->
+                            <div class="dropdown-split" style="position:relative">
+                                <i class="fa-solid fa-caret-down icon-btn dropdown-trigger" onclick="toggleMenu(event, ${i})"></i>
+                                <div class="dropdown-menu" id="menu-${i}">
+                                    <!-- 此时过滤已在外侧，下拉里一般只放删除，或者放修改过滤 -->
+                                    <div class="menu-option delete"><i class="fa-regular fa-trash-can"></i> 删除</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // --- 方案四：智能闪避 (Fixed Width + Smart Animation) ---
+                else { // scheme 4
+                    const filterClass = t.filtered ? 'active-filter' : '';
+                    const filterColor = t.filtered ? '' : 'color:#ccc;';
+                    
+                    el.innerHTML = `
+                        <span class="chip-name">${t.name}</span>
+                        
+                        <!-- 过滤图标: 悬停时会 transform translateX(-24px) -->
+                        <div class="icon-filter ${filterClass}" style="${filterColor}">
+                            <i class="fa-solid fa-filter icon-btn"></i>
+                        </div>
+                        
+                        <!-- 删除 Overlay: 悬停时 opacity 1 -->
+                        <div class="delete-overlay">
+                            <i class="fa-regular fa-trash-can icon-btn" style="color:#ff4d4f;"></i>
+                        </div>
+                    `;
+                }
+
+                container.appendChild(el);
+            });
+        }
+
+        render();
+    </script>
+</body>
+</html>

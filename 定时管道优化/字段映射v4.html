@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加表 - 精准视口控制版</title>
+    <style>
+        /* --- 1. 基础重置 --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            background: rgba(0,0,0,0.6); 
+            height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden; 
+            color: #333;
+        }
+
+        /* 原子类 */
+        .icon { width: 14px; height: 14px; fill: currentColor; vertical-align: middle; }
+        .text-gray { color: #999; }
+        .text-blue { color: #1890ff; }
+        .bg-blue-light { background-color: #e6f7ff; }
+        .bg-green-light { background-color: #f6ffed; }
+
+        /* --- 2. 弹窗容器 (80%) --- */
+        .modal-container { 
+            width: 80%; 
+            height: 80%; /* 核心高度基准 */
+            background: #fff; 
+            border-radius: 4px; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3); 
+            display: flex; 
+            flex-direction: column; 
+            min-width: 1000px;
+        }
+
+        /* --- Fixed Header Elements (Total ~145px) --- */
+        .modal-sub-header-group { flex-shrink: 0; background: #fff; z-index: 10; }
+        .modal-header { height: 50px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 16px; font-weight: 500; }
+        .close-btn { font-size: 20px; color: #999; cursor: pointer; }
+
+        .steps-bar { height: 44px; background: #fafafa; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; padding: 0 24px; font-size: 14px; }
+        .step-item { display: flex; align-items: center; color: #999; margin-right: 20px; }
+        .step-item.active { color: #333; font-weight: 500; }
+        .step-badge { width: 20px; height: 20px; background: #1890ff; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 8px; }
+
+        .global-actions-bar { height: 44px; background: #fff; display: flex; align-items: center; justify-content: flex-end; padding: 0 24px; border-bottom: 1px solid #f0f0f0; }
+        .global-batch-btn { height: 28px; padding: 0 12px; border: 1px solid #d9d9d9; background: #fff; border-radius: 2px; font-size: 13px; color: #333; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
+        /* --- 3. Body Split (Flex) --- */
+        .modal-body { 
+            flex: 1; 
+            display: flex;
+            overflow: hidden; 
+            position: relative; 
+        }
+
+        /* Sidebar */
+        .sidebar { width: 220px; border-right: 1px solid #f0f0f0; display: flex; flex-direction: column; background: #fff; flex-shrink: 0; }
+        .sidebar-search { padding: 12px; border-bottom: 1px solid #f0f0f0; }
+        .search-input { width: 100%; height: 30px; border: 1px solid #d9d9d9; border-radius: 2px; padding: 0 8px; }
+        .tree-list { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .tree-node { padding: 8px 16px; cursor: pointer; font-size: 13px; border-left: 3px solid transparent; }
+        .tree-node.active { background: #e6f7ff; color: #1890ff; border-left-color: #1890ff; }
+        .resizer { width: 5px; cursor: col-resize; position: absolute; left: 220px; top: 0; bottom: 0; z-index: 10; }
+
+        /* --- 4. Content Viewport (Outer Scroll) --- */
+        .content-viewport {
+            flex: 1; 
+            overflow-y: auto; /* 整体滚动 */
+            background: #fff;
+            position: relative;
+        }
+
+        .content-padding { padding: 20px 24px 0 24px; }
+        .section-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; color: #333; }
+
+        /* --- 5. Table Area Border Wrapper --- */
+        .table-area-border {
+            border: 1px solid #e8e8e8;
+            /* 设置 relative，为了让内部的 absolute 悬浮条以此为边界 */
+            position: relative; 
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Sticky Table Header (Within Content Viewport) */
+        .sticky-header-container {
+            position: sticky; top: 0; z-index: 20; background: #fff;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        .toolbar-inner { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f9f9f9; }
+        .split-header { display: flex; gap: 20px; padding: 8px 12px; }
+        .header-box { flex: 1; height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .box-src { background: #e6f7ff; color: #333; }
+        .box-tgt { background: #d9f7be; color: #333; }
+        .col-header { display: flex; background: #fafafa; font-size: 12px; color: #666; border-top: 1px solid #e8e8e8;}
+        .col-group { flex: 1; display: flex; height: 36px; align-items: center; }
+        .col-gap { flex: 0 0 30px; }
+        .th-chk { width: 40px; text-align: center; }
+        .th-flex { flex: 1; padding-left: 8px; }
+
+        /* 
+           --- [关键 CSS] Table Rows Height Control ---
+           80vh (Total) 
+           - 200px (Top/Footer Fixed)
+           - 170px (Table Header + Section Title + Body Padding)
+           - 40px (预留露出高度)
+           = -410px ~ -420px
+        */
+        .rows-scroll-area {
+            background: #fff;
+            overflow-y: auto; 
+            /* 精确计算：保证内容过多时，正好切在底部写入方式的标题处 */
+            max-height: calc(80vh - 425px); 
+            min-height: 150px; 
+            /* 底部 padding，确保最后一行数据能被滚出来，不被悬浮条挡死 */
+            padding-bottom: 40px; 
+        }
+
+        .table-row { display: flex; height: 44px; border-bottom: 1px solid #e8e8e8; align-items: center; font-size: 13px; }
+        .table-row:hover { background: #fafafa; }
+        .row-left, .row-right { flex: 1; display: flex; height: 100%; align-items: center; }
+        .row-mid { flex: 0 0 30px; display: flex; justify-content: center; align-items: center; color:#ccc;}
+        .row-input { height: 24px; width: 92%; border: 1px solid #d9d9d9; border-radius: 2px; padding:0 6px; font-size: 12px; }
+
+        /* --- [关键交互] 悬浮覆盖式操作栏 (Absolute Overlay) --- */
+        .overlay-footer-bar {
+            position: absolute; /* 相对于 .table-area-border 定位 */
+            bottom: 0; left: 0; right: 0;
+            z-index: 30; /* 覆盖在 rows 之上 */
+            
+            height: 40px; 
+            
+            /* 样式弱化 */
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(2px);
+            border-top: 1px solid #e8e8e8;
+            
+            display: none; 
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            font-size: 12px;
+            
+            animation: fadeIn 0.15s ease-out;
+        }
+        .overlay-footer-bar.show { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .bar-left { display: flex; align-items: center; gap: 8px; color: #666; }
+        .bar-num { color: #1890ff; font-weight: bold; }
+        .bar-clear { cursor: pointer; color: #999; }
+        .bar-clear:hover { color: #333; }
+
+        .bar-actions { display: flex; gap: 8px; align-items: center; }
+        
+        .weak-btn {
+            cursor: pointer;
+            color: #666; 
+            transition: all 0.2s;
+            padding: 2px 8px; border-radius: 2px;
+        }
+        .weak-btn:hover { color: #1890ff; background: #f0f0f0; }
+        .weak-btn.danger:hover { color: #ff4d4f; background: #fff1f0; }
+        
+        .divider-v { width: 1px; height: 10px; background: #ddd; }
+
+        /* --- 6. 写入 config --- */
+        .write-config-section { 
+            /* 这里的 padding-top 和 标题高度就是我们希望“露出”的部分 */
+            padding: 24px; 
+            padding-bottom: 40px; 
+        }
+        /* 这里的标题应该正好位于可视区域的底部边缘 */
+        .bottom-title { font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #333; }
+        .cfg-row { display: flex; margin-bottom: 8px; font-size: 13px; }
+        .cfg-label { width: 100px; color: #666; }
+        .cfg-val { flex: 1; color: #333; display: flex; gap: 8px; flex-wrap: wrap; }
+        .pk-tag { display: inline-block; background: #fff; border: 1px solid #ccc; border-radius: 3px; padding: 0 6px; font-size: 12px; margin-right: 6px; }
+
+        /* Footer (Fixed ~60px) */
+        .modal-footer { height: 60px; border-top: 1px solid #e8e8e8; background: #fff; display: flex; align-items: center; justify-content: flex-end; padding: 0 24px; flex-shrink: 0; z-index: 50; }
+        .btn { height: 32px; padding: 0 16px; border: 1px solid #d9d9d9; background: #fff; border-radius: 2px; margin-left: 12px; cursor: pointer; font-size: 14px; }
+        .btn:hover { color: #1890ff; border-color: #1890ff; }
+        .btn-p { background: #1890ff; color: #fff; border-color: #1890ff; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+    </style>
+</head>
+<body>
+
+<div class="modal-container">
+    <div class="modal-sub-header-group">
+        <header class="modal-header">
+            <span>添加表</span>
+            <span class="close-btn">×</span>
+        </header>
+
+        <div class="steps-bar">
+            <div class="step-item"><span class="step-badge">1</span> 选择来源表</div>
+            <span class="step-arrow">>></span>
+            <div class="step-item active"><span class="step-badge">2</span> 字段映射与写入</div>
+        </div>
+
+        <div class="global-actions-bar">
+            <div class="global-batch-btn">全部表批量操作 ▼</div>
+        </div>
+    </div>
+
+    <div class="modal-body">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-search"><input class="search-input" placeholder="搜索表"></div>
+            <div class="tree-list">
+                <div class="tree-node active">📅 入库单查询_子表1</div>
+                <div class="tree-node">📅 货品价目表</div>
+            </div>
+        </div>
+        <div class="resizer" id="resizer"></div>
+
+        <div class="content-viewport">
+            
+            <div class="content-padding">
+                <div class="section-title">字段映射</div>
+
+                <!-- Table Wrapper (Relative for absolute footer) -->
+                <div class="table-area-border">
+                    <div class="sticky-header-container">
+                        <div class="toolbar-inner">
+                            <select style="height:28px; border:1px solid #d9d9d9;"><option>同名映射</option></select>
+                            <div style="font-size:12px; color:#666; cursor:pointer;">+ 手动建表 &nbsp; ↻ 重新获取</div>
+                        </div>
+                        <div class="split-header">
+                            <div class="header-box box-src">来源: 采购单查询</div>
+                            <div class="header-box box-tgt">目标: 表 Tabe1</div>
+                        </div>
+                        <div class="col-header">
+                            <div class="col-group" style="background:#f0f7ff; border-right:1px solid #fff;">
+                                <div class="th-chk"><input type="checkbox" id="checkAll"></div>
+                                <div class="th-flex">来源字段</div>
+                                <div class="th-flex">类型</div>
+                                <div class="th-sm">主键</div>
+                            </div>
+                            <div class="col-gap"></div>
+                            <div class="col-group" style="background:#f6ffed;">
+                                <div class="th-flex">目标字段</div>
+                                <div class="th-flex">类型</div>
+                                <div class="th-sm">主键</div>
+                                <div class="th-op"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rows Area with Calc Height to peek footer -->
+                    <div class="rows-scroll-area" id="rowContainer">
+                        <!-- Content -->
+                    </div>
+
+                    <!-- Overlay Footer Bar (Absolute Bottom) -->
+                    <div class="overlay-footer-bar" id="overlayBar">
+                        <div class="bar-left">
+                            <span>已选 <span class="bar-num" id="selCount">0</span> 项</span>
+                            <span class="bar-clear" id="uncheckBtn" title="清空">×</span>
+                        </div>
+                        <div class="bar-actions">
+                            <div class="weak-btn">恢复映射</div>
+                            <div class="weak-btn">修改类型</div>
+                            <div class="divider-v"></div>
+                            <div class="weak-btn danger">取消映射</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Write Config Section -->
+            <div class="write-config-section">
+                <!-- 
+                     The calc() in .rows-scroll-area aims to make
+                     this TITLE visible at the bottom of the viewport
+                     without scrolling initially.
+                -->
+                <div class="bottom-title">写入方式</div>
+                <div class="cfg-row">
+                    <span class="cfg-label">写入方式</span>
+                    <span class="cfg-val">直接将数据写入目标表</span>
+                </div>
+                <div class="cfg-row">
+                    <span class="cfg-label">主键映射</span>
+                    <span class="cfg-val" id="pkContainer"></span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer class="modal-footer">
+        <button class="btn">取消</button>
+        <button class="btn btn-p">确定</button>
+    </footer>
+</div>
+
+<script>
+    // 模拟数据 
+    const fields = Array.from({length: 30}, (_, i) => ({
+        name: `字段_${i+1}`,
+        type: i % 2 === 0 ? 'varchar' : 'int',
+        key: i < 2
+    }));
+
+    const rowContainer = document.getElementById('rowContainer');
+
+    function render() {
+        let html = '';
+        fields.forEach(f => {
+            html += `
+            <div class="table-row">
+                <div class="row-left">
+                    <div class="th-chk"><input type="checkbox" class="row-chk"></div>
+                    <div class="th-flex">${f.name}</div>
+                    <div class="th-flex text-gray">${f.type}</div>
+                    <div class="th-sm">${f.key?'🔑':''}</div>
+                </div>
+                <div class="row-mid">➜</div>
+                <div class="row-right">
+                    <div class="th-flex"><input class="row-input" value="${f.name}"></div>
+                    <div class="th-flex"><input class="row-input" value="${f.type}"></div>
+                    <div class="th-sm"></div>
+                    <div class="th-op" style="cursor:pointer; color:#999;">×</div>
+                </div>
+            </div>`;
+        });
+        rowContainer.innerHTML = html;
+        document.getElementById('pkContainer').innerHTML = fields.filter(f=>f.key).map(f=>`<span class="pk-tag">${f.name}=${f.name}</span>`).join('');
+        
+        bindEvents();
+    }
+
+    function bindEvents() {
+        const checks = document.querySelectorAll('.row-chk');
+        const bar = document.getElementById('overlayBar');
+        const countSpan = document.getElementById('selCount');
+        const checkAll = document.getElementById('checkAll');
+        const clearBtn = document.getElementById('uncheckBtn');
+
+        const update = () => {
+            const n = Array.from(checks).filter(c=>c.checked).length;
+            if (n > 0) {
+                bar.classList.add('show');
+                countSpan.innerText = n;
+            } else {
+                bar.classList.remove('show');
+            }
+            if(checkAll) {
+                checkAll.checked = (n === checks.length && n > 0);
+                checkAll.indeterminate = (n > 0 && n < checks.length);
+            }
+        }
+
+        checks.forEach(c => c.addEventListener('change', update));
+        if(checkAll) {
+            checkAll.addEventListener('change', e => {
+                checks.forEach(c => c.checked = e.target.checked);
+                update();
+            });
+        }
+        if(clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                checks.forEach(c => c.checked = false);
+                if(checkAll) checkAll.checked = false;
+                update();
+            });
+        }
+    }
+
+    const resizer = document.getElementById('resizer');
+    const sidebar = document.getElementById('sidebar');
+    let r = false;
+    resizer.addEventListener('mousedown', () => {r=true; document.body.style.cursor='col-resize'});
+    document.addEventListener('mousemove', e => { if(r){ 
+        const w = e.clientX - sidebar.parentElement.getBoundingClientRect().left;
+        if(w>150 && w<600) sidebar.style.width=w+'px';
+    }});
+    document.addEventListener('mouseup', () => {r=false; document.body.style.cursor='default'});
+
+    render();
+</script>
+</body>
+</html>

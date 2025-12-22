@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帆软数据管道 - 高保真还原</title>
+    <!-- 引入 FontAwesome 图标库以还原视觉图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #3c78f8;
+            --primary-blue-hover: #2960d7;
+            --text-main: #303133;
+            --text-regular: #606266;
+            --text-secondary: #909399;
+            --border-color: #ebeef5;
+            --bg-body: #f5f7fa;
+            --header-height: 50px;
+            --sidebar-width: 60px;
+            --sub-sidebar-width: 240px;
+            --table-border: #e8eaec;
+            --hover-bg: #f5f7fa;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- 顶部导航栏 --- */
+        .top-header {
+            height: var(--header-height);
+            background: #fff;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            z-index: 100;
+            position: relative;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-main);
+        }
+
+        .logo-icon {
+            background: var(--primary-blue);
+            color: white;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-style: italic;
+            font-weight: bold;
+        }
+
+        .header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+            color: var(--text-regular);
+        }
+
+        .sys-badge {
+            background: #eef2fe;
+            color: var(--primary-blue);
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* --- 主体布局 --- */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - var(--header-height));
+        }
+
+        /* 左侧一级导航 (Icon Bar) */
+        .icon-sidebar {
+            width: var(--sidebar-width);
+            background: #fff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 10px;
+        }
+
+        .nav-item {
+            width: 40px;
+            height: 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-regular);
+            font-size: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        .nav-item i {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item:hover {
+            color: var(--primary-blue);
+        }
+
+        .nav-item.active {
+            color: var(--primary-blue);
+            background: #ecf5ff;
+        }
+
+        /* 左侧二级导航 (Tree View) */
+        .tree-sidebar {
+            width: var(--sub-sidebar-width);
+            background: #fff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-new {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 6px 30px 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .tree-list {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .tree-node {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 13px;
+            color: var(--text-regular);
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        
+        .tree-node:hover {
+            background-color: #f5f7fa;
+        }
+
+        .tree-node.active {
+            background-color: #ebf3ff;
+            color: var(--primary-blue);
+            font-weight: 500;
+            border-right: 2px solid var(--primary-blue);
+        }
+
+        .indent-1 { padding-left: 0px; }
+        .indent-2 { padding-left: 20px; }
+        .indent-3 { padding-left: 40px; }
+
+        .tree-icon {
+            margin-right: 6px;
+            width: 14px;
+            text-align: center;
+        }
+        .folder-icon { color: #fcc02e; }
+        .file-icon { color: #7f95d1; } /* Blueish file icon */
+
+        /* --- 右侧主内容区 --- */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .content-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* 面包屑/标题行 */
+        .page-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .page-breadcrumb {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            gap: 8px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-outline {
+            border: 1px solid #dcdfe6;
+            background: #fff;
+            color: var(--text-regular);
+            padding: 6px 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 任务信息区块 */
+        .task-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+        .task-meta span { margin-right: 20px; }
+
+        .flow-card {
+            background: #f8f9fb;
+            border: 1px solid #ebeef5;
+            border-radius: 6px;
+            padding: 16px;
+            position: relative;
+        }
+
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+        
+        .db-tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .arrow-divider {
+            color: var(--primary-blue);
+            font-size: 20px;
+            margin: 0 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .edit-pen {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border: 1px solid #dcdfe6;
+            padding: 6px;
+            border-radius: 4px;
+            background: #fff;
+        }
+        
+        .more-info-toggle {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-regular);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Tab 栏 */
+        .tabs-nav {
+            display: flex;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-color);
+            margin-top: 5px;
+        }
+
+        .tab-item {
+            padding: 12px 0;
+            margin-right: 30px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text-regular);
+            position: relative;
+        }
+
+        .tab-item.active {
+            color: var(--primary-blue);
+            font-weight: 500;
+        }
+
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary-blue);
+        }
+
+        /* 工具栏 */
+        .toolbar {
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-add {
+            background: #eef4ff;
+            color: var(--primary-blue);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 2px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .right-tools {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-regular);
+        }
+
+        /* --- 高保真表格 (Sticky Columns) --- */
+        .table-container {
+            flex: 1;
+            overflow: auto; /* 允许滚动 */
+            padding: 0 24px 24px 24px;
+            margin-bottom: 24px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: separate; /* 用于sticky效果 */
+            border-spacing: 0;
+            font-size: 12px;
+            color: var(--text-main);
+            min-width: 1200px; /* 强制横向滚动 */
+        }
+
+        .data-table th {
+            background: #f5f7fa;
+            color: var(--text-regular);
+            font-weight: 500;
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--table-border);
+            border-top: 1px solid var(--table-border);
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10; /* Header Z-index */
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--table-border);
+            background: #fff;
+            white-space: nowrap;
+        }
+
+        .data-table tr:hover td {
+            background: var(--hover-bg);
+        }
+
+        /* 冻结列样式 */
+        .sticky-col-left {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: #fff; /* 防止透明 */
+            border-right: 1px solid transparent; 
+        }
+        
+        .sticky-col-right {
+            position: sticky;
+            right: 0;
+            z-index: 2;
+            background: #fff;
+            text-align: center;
+            width: 100px;
+        }
+
+        /* 表头也需要冻结 */
+        th.sticky-col-left {
+            z-index: 11;
+            background: #f5f7fa;
+        }
+        th.sticky-col-right {
+            z-index: 11;
+            background: #f5f7fa;
+        }
+
+        /* 滚动时的阴影效果 (通过JS添加类名或纯CSS的技巧) */
+        /* CSS Trick: Masking or simplified logical borders */
+        .sticky-col-left::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: -5px;
+            bottom: 0;
+            width: 5px;
+            pointer-events: none;
+            box-shadow: inset 5px 0 5px -5px rgba(0,0,0,0.1);
+        }
+        
+        .sticky-col-right::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -5px;
+            bottom: 0;
+            width: 5px;
+            pointer-events: none;
+            box-shadow: inset -5px 0 5px -5px rgba(0,0,0,0.1);
+        }
+
+        /* 表格内部元素样式 */
+        .cell-checkbox {
+            margin-right: 8px;
+            vertical-align: middle;
+            width: 14px;
+            height: 14px;
+            border: 1px solid #dcdfe6;
+            border-radius: 2px;
+            cursor: pointer;
+            display: inline-block;
+            position: relative;
+        }
+        /* 模拟选中状态 */
+        .cell-checkbox.checked::after {
+            content: '\2713';
+            font-size: 10px;
+            color: white;
+            background: var(--primary-blue);
+            position: absolute;
+            top: -1px; left: -1px; right: -1px; bottom: -1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1px;
+        }
+
+        .row-group-title {
+            background: #fff;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+        
+        /* Expand Icon */
+        .expand-icon {
+            font-size: 10px;
+            color: var(--text-regular);
+            margin-right: 5px;
+            width: 12px;
+            display: inline-block;
+        }
+
+        .info-circle {
+            color: var(--text-secondary);
+            margin-left: 4px;
+            cursor: help;
+        }
+
+        .action-icon {
+            color: var(--text-regular);
+            margin: 0 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .action-icon:hover {
+            color: var(--primary-blue);
+        }
+        .icon-edit { color: var(--text-regular); }
+        .icon-play { color: var(--text-regular); }
+        .icon-delete { color: var(--text-regular); }
+
+        .link-text {
+            color: var(--primary-blue);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* 树形子表连接线 L型 */
+        .sub-row td.sticky-col-left {
+            padding-left: 40px; /* Base indent */
+            position: sticky;
+        }
+        .sub-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 25px;
+            border-left: 1px solid #dcdfe6;
+            border-bottom: 1px solid #dcdfe6;
+            margin-right: 8px;
+            vertical-align: top;
+            margin-top: -12px; /* Pull up to connect to prev row */
+            position: relative;
+            top: 2px;
+        }
+        
+        /* Footer info */
+        .footer-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: 10px 24px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 顶部导航 -->
+    <header class="top-header">
+        <div class="logo-area">
+            <div class="logo-icon">F</div>
+            帆软软件有限公司
+        </div>
+        <div class="header-right">
+            <div class="sys-badge">
+                <i class="fa-solid fa-cube"></i> 管理系统 <i class="fa-solid fa-caret-down"></i>
+            </div>
+            <i class="fa-regular fa-bell"></i>
+            <i class="fa-regular fa-circle-question"></i>
+            <div class="user-profile">
+                <i class="fa-solid fa-user"></i> 用户名 <i class="fa-solid fa-caret-down"></i>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <!-- 侧边栏一级 -->
+        <aside class="icon-sidebar">
+            <div class="nav-item"><i class="fa-solid fa-layer-group"></i>运维中心</div>
+            <div class="nav-item active"><i class="fa-solid fa-route"></i>数据管道</div>
+            <div class="nav-item"><i class="fa-solid fa-code"></i>数据开发</div>
+            <div class="nav-item"><i class="fa-solid fa-database"></i>数据服务</div>
+            <div class="nav-item"><i class="fa-solid fa-server"></i>数据管理</div>
+            <div style="margin-top: auto; margin-bottom: 20px;">
+                <div class="nav-item"><i class="fa-solid fa-angles-right"></i></div>
+            </div>
+        </aside>
+
+        <!-- 侧边栏二级 -->
+        <aside class="tree-sidebar">
+            <div class="sidebar-title">
+                定时管道
+                <button class="btn-new"><i class="fa-solid fa-plus"></i> 新建</button>
+            </div>
+            <div class="search-box">
+                <input type="text" placeholder="搜索任务/文件夹">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <i class="fa-solid fa-rotate" style="right: -25px; cursor: pointer;"></i>
+            </div>
+            <ul class="tree-list">
+                <li class="tree-node indent-1"><i class="fa-solid fa-caret-down tree-icon"></i> <i class="fa-regular fa-folder folder-icon tree-icon"></i> 所有的任务</li>
+                <li class="tree-node indent-2"><i class="fa-solid fa-caret-down tree-icon"></i> <i class="fa-regular fa-folder folder-icon tree-icon"></i> 文件夹1</li>
+                <li class="tree-node indent-3"><i class="fa-solid fa-caret-right tree-icon"></i> <i class="fa-regular fa-folder folder-icon tree-icon"></i> 文件夹2</li>
+                <li class="tree-node indent-3"><i class="fa-solid fa-caret-down tree-icon"></i> <i class="fa-regular fa-folder folder-icon tree-icon"></i> 文件夹3</li>
+                <li class="tree-node indent-3 active" style="padding-left: 60px;"><i class="fa-regular fa-file-code file-icon tree-icon"></i> 任务1</li>
+                <li class="tree-node indent-3" style="padding-left: 60px;"><i class="fa-regular fa-file-code file-icon tree-icon"></i> 任务2</li>
+                <li class="tree-node indent-3" style="padding-left: 60px;"><i class="fa-regular fa-file-code file-icon tree-icon"></i> 任务3</li>
+                <li class="tree-node indent-3"><i class="fa-solid fa-caret-right tree-icon"></i> <i class="fa-regular fa-folder folder-icon tree-icon"></i> 文件夹4</li>
+                <li class="tree-node indent-2"><i class="fa-solid fa-caret-right tree-icon"></i> <i class="fa-regular fa-folder folder-icon tree-icon"></i> 文件夹7</li>
+            </ul>
+        </aside>
+
+        <!-- 内容区域 -->
+        <main class="content-area">
+            <div class="content-header">
+                <div class="page-title-row">
+                    <div class="page-breadcrumb">
+                        <i class="fa-regular fa-rectangle-list" style="color: #3c78f8;"></i> 定时管道任务1
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-outline"><i class="fa-solid fa-sliders"></i> 任务控制</button>
+                        <button class="btn-outline"><i class="fa-regular fa-clock"></i> 定时调度</button>
+                    </div>
+                </div>
+                
+                <div class="task-meta">
+                    <span>创建人：Lana</span>
+                    <span>创建时间：2023-03-02 12:10:10</span>
+                    <span>定时调度：<span style="border-bottom: 1px dashed #999;">未配置</span></span>
+                </div>
+                <div class="task-meta">
+                    描述：描述文案描述文案描述文案描述文案描述文案描述文案描述文案...
+                </div>
+
+                <div class="flow-card">
+                    <i class="fa-solid fa-pen edit-pen"></i>
+                    <div class="flow-diagram">
+                        <div class="db-tag">
+                            <i class="fa-solid fa-database" style="color:#5cb6ff;"></i>
+                            客客云 · <strong>_5.175数据连接</strong>
+                        </div>
+                        <div class="arrow-divider">
+                            <i class="fa-solid fa-arrow-right-long"></i>
+                        </div>
+                        <div class="db-tag">
+                            <i class="fa-solid fa-seedling" style="color:#5ccebd;"></i>
+                            MySQL · <strong>MySQL</strong> (default)
+                        </div>
+                    </div>
+                    <div class="more-info-toggle">
+                        <i class="fa-solid fa-caret-down"></i> 更多信息
+                    </div>
+                    <div style="margin-top: 8px; font-size: 13px; color: #606266;">
+                        同步源表结构变化： 已开启
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs-nav">
+                <div class="tab-item active">同步配置</div>
+                <div class="tab-item">运行记录</div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <button class="btn-add"><i class="fa-solid fa-circle-plus"></i> 添加表</button>
+                <div class="right-tools">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span style="font-size: 13px;"><i class="fa-regular fa-circle-play"></i> 运行所有表</span>
+                </div>
+            </div>
+
+            <!-- Table Container (Scrollable) -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="sticky-col-left" style="min-width: 280px; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);">
+                                <div class="cell-checkbox"></div> 来源表
+                            </th>
+                            <th style="min-width: 100px;">表类型 <i class="fa-solid fa-filter" style="font-size:10px; color:#909399;"></i></th>
+                            <th style="min-width: 200px;">目标表</th>
+                            <th style="min-width: 120px;">写入方式</th>
+                            <th style="min-width: 160px;">当前断点(下次起点) <i class="fa-regular fa-circle-question info-circle"></i></th>
+                            <th style="min-width: 160px;">首次同步起点 <i class="fa-regular fa-circle-question info-circle"></i></th>
+                            <th style="min-width: 120px;">今日调用余量</th>
+                            <th class="sticky-col-right" style="box-shadow: -2px 0 5px -2px rgba(0,0,0,0.1);">
+                                <i class="fa-solid fa-gear"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 分类 1 -->
+                        <tr class="group-row">
+                            <td colspan="8" class="sticky-col-left" style="background:#fff; z-index: 5;">
+                                <i class="fa-solid fa-caret-down expand-icon"></i> 分类：基础类
+                            </td>
+                        </tr>
+                        <!-- 行 1 -->
+                        <tr>
+                            <td class="sticky-col-left">
+                                <div class="cell-checkbox"></div>
+                                <span style="margin-right:4px;">店铺查询</span>
+                                <i class="fa-regular fa-circle-question info-circle"></i>
+                            </td>
+                            <td>全量表</td>
+                            <td>店铺查询</td>
+                            <td>清空目标表，再写入数据 <i class="fa-regular fa-circle-question info-circle"></i></td>
+                            <td>--</td>
+                            <td>全量表，无需配置</td>
+                            <td><span class="link-text">查看</span></td>
+                            <td class="sticky-col-right">
+                                <i class="fa-solid fa-pen action-icon icon-edit" style="color:#f56c6c;"></i> <!-- Red edit icon per image -->
+                                <i class="fa-regular fa-circle-play action-icon icon-play"></i>
+                                <i class="fa-regular fa-trash-can action-icon icon-delete"></i>
+                            </td>
+                        </tr>
+                        <!-- 行 2 -->
+                        <tr>
+                            <td class="sticky-col-left">
+                                <div class="cell-checkbox"></div>
+                                <span style="margin-right:4px;">仓库查询</span>
+                                <i class="fa-regular fa-circle-question info-circle"></i>
+                            </td>
+                            <td>全量表</td>
+                            <td>仓库查询</td>
+                            <td>清空目标表，再写入数据 <i class="fa-regular fa-circle-question info-circle"></i></td>
+                            <td>--</td>
+                            <td>全量表，无需配置</td>
+                            <td><span class="link-text">查看</span></td>
+                            <td class="sticky-col-right">
+                                <i class="fa-solid fa-pen action-icon icon-edit" style="color:#f56c6c;"></i>
+                                <i class="fa-regular fa-circle-play action-icon icon-play"></i>
+                                <i class="fa-regular fa-trash-can action-icon icon-delete"></i>
+                            </td>
+                        </tr>
+
+                        <!-- 分类 2 -->
+                        <tr class="group-row">
+                            <td colspan="8" class="sticky-col-left" style="background:#fff; z-index: 5;">
+                                <i class="fa-solid fa-caret-down expand-icon"></i> 分类：库存类
+                            </td>
+                        </tr>
+                        <!-- 行 3 -->
+                        <tr>
+                            <td class="sticky-col-left">
+                                <div class="cell-checkbox"></div>
+                                <span style="margin-right:4px;">盘点入库单查询</span>
+                                <i class="fa-regular fa-circle-question info-circle"></i>
+                            </td>
+                            <td>全量表</td>
+                            <td>盘点入库单查询</td>
+                            <td>清空目标表，再写入数据 <i class="fa-regular fa-circle-question info-circle"></i></td>
+                            <td>--</td>
+                            <td>全量表，无需配置</td>
+                            <td><span class="link-text">查看</span></td>
+                            <td class="sticky-col-right">
+                                <i class="fa-solid fa-pen action-icon icon-edit"></i>
+                                <i class="fa-regular fa-circle-play action-icon icon-play"></i>
+                                <i class="fa-regular fa-trash-can action-icon icon-delete"></i>
+                            </td>
+                        </tr>
+                        <!-- 行 3 子表 -->
+                        <tr class="sub-row">
+                            <td class="sticky-col-left">
+                                <span class="sub-indicator"></span>
+                                货品档案查询_单品信息详情
+                            </td>
+                            <td>全量子表</td>
+                            <td>货品档案查询_单品信息详情</td>
+                            <td>清空目标表，再等值更新 <i class="fa-regular fa-circle-question info-circle"></i></td>
+                            <td style="color:#909399;">跟随主表</td>
+                            <td style="color:#909399;">跟随主表</td>
+                            <td style="color:#909399;">跟随主表</td>
+                            <td class="sticky-col-right">
+                                <i class="fa-solid fa-pen action-icon icon-edit"></i>
+                            </td>
+                        </tr>
+
+                        <!-- 行 4 -->
+                        <tr>
+                            <td class="sticky-col-left">
+                                <div class="cell-checkbox"></div>
+                                <span style="margin-right:4px;">入库瞬时成本查询</span>
+                                <i class="fa-regular fa-circle-question info-circle"></i>
+                            </td>
+                            <td>增量表</td>
+                            <td>入库瞬时成本查询</td>
+                            <td>直接将数据写入目标表 <i class="fa-regular fa-circle-question info-circle"></i></td>
+                            <td>2025-11-24 11:20:30 <i class="fa-regular fa-circle-question info-circle"></i></td>
+                            <td>2024-3-22 12:10:10</td>
+                            <td><span class="link-text">查看</span></td>
+                            <td class="sticky-col-right">
+                                <i class="fa-solid fa-pen action-icon icon-edit"></i>
+                                <i class="fa-regular fa-circle-play action-icon icon-play"></i>
+                                <i class="fa-regular fa-trash-can action-icon icon-delete"></i>
+                            </td>
+                        </tr>
+                        <!-- 行 4 子表 -->
+                        <tr class="sub-row">
+                            <td class="sticky-col-left">
+                                <span class="sub-indicator"></span>
+                                入库瞬时成本查询_明细
+                            </td>
+                            <td>增量子表</td>
+                            <td>入库瞬时成本查询_明细</td>
+                            <td>等值更新：基于等值字段的... <i class="fa-regular fa-circle-question info-circle"></i></td>
+                            <td style="color:#909399;">跟随主表</td>
+                            <td style="color:#909399;">跟随主表</td>
+                            <td style="color:#909399;">跟随主表</td>
+                            <td class="sticky-col-right">
+                                <i class="fa-solid fa-pen action-icon icon-edit"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 底部统计 -->
+            <div class="footer-info">
+                已添加 6 张表，其中有4张主表、2张子表
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // 简单的交互逻辑：侧边栏点击高亮
+        document.querySelectorAll('.tree-node').forEach(node => {
+            node.addEventListener('click', function(e) {
+                // 阻止事件冒泡防止父级触发
+                e.stopPropagation();
+                // 移除其他激活状态
+                document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active'));
+                // 激活当前
+                this.classList.add('active');
+            });
+        });
+
+        // Tab 切换逻辑
+        document.querySelectorAll('.tab-item').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 复选框点击效果
+        document.querySelectorAll('.cell-checkbox').forEach(box => {
+            box.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.classList.toggle('checked');
+            });
+        });
+    </script>
+</body>
+</html>

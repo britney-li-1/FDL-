@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加表 - 飞书式吸底浮层</title>
+    <style>
+        /* --- 1. 基础重置 --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            background: rgba(0,0,0,0.55); 
+            height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden; 
+            color: #333;
+        }
+
+        /* 工具类 */
+        .icon { width: 14px; height: 14px; fill: currentColor; vertical-align: middle; }
+        .icon-md { width: 16px; height: 16px; }
+        .text-gray { color: #999; }
+        .text-blue { color: #1890ff; }
+        .text-green { color: #52c41a; }
+        .bg-blue-light { background-color: #e6f7ff; }
+        .bg-green-light { background-color: #f6ffed; }
+
+        /* --- 2. 弹窗容器 --- */
+        .modal-container { 
+            width: 90%; height: 90%; background: #fff; border-radius: 4px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2); display: flex; flex-direction: column; 
+            min-width: 1100px; max-width: 1600px;
+        }
+
+        /* --- 3. 头部 & 步骤条 --- */
+        .modal-header { height: 50px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 16px; font-weight: 500; flex-shrink: 0; }
+        .close-btn { font-size: 20px; color: #999; cursor: pointer; }
+
+        .steps-bar { height: 48px; background: #fafafa; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; padding: 0 24px; flex-shrink: 0; font-size: 14px; }
+        .step-item { display: flex; align-items: center; color: #999; margin-right: 20px; }
+        .step-item.active { color: #333; font-weight: 500; }
+        .step-badge { width: 20px; height: 20px; background: #d9d9d9; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 8px; }
+        .step-item.active .step-badge { background: #1890ff; }
+        .step-arrow { margin-right: 20px; color: #ccc; }
+
+        /* 全局操作栏 */
+        .global-actions-bar { height: 50px; background: #fff; display: flex; align-items: center; justify-content: flex-end; padding: 0 24px; flex-shrink: 0; }
+        .global-batch-btn { height: 32px; padding: 0 16px; border: 1px solid #d9d9d9; background: #fff; border-radius: 2px; font-size: 14px; color: #333; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.3s; }
+        .global-batch-btn:hover { border-color: #40a9ff; color: #40a9ff; }
+
+        /* --- 4. 主体布局 --- */
+        .modal-body { flex: 1; display: flex; overflow: hidden; position: relative; border-top: 1px solid #f0f0f0; }
+
+        .sidebar { width: 240px; border-right: 1px solid #f0f0f0; display: flex; flex-direction: column; background: #fff; }
+        .sidebar-search { padding: 16px; }
+        .search-input { width: 100%; height: 32px; border: 1px solid #d9d9d9; border-radius: 2px; padding-left: 10px; }
+        .tree-list { flex: 1; overflow-y: auto; padding-top: 10px; }
+        .tree-node { padding: 10px 20px; cursor: pointer; font-size: 14px; }
+        .tree-node.active { background: #e6f7ff; color: #1890ff; border-right: 2px solid #1890ff; }
+        .resizer { width: 5px; cursor: col-resize; position: absolute; left: 240px; top: 0; bottom: 0; z-index: 10; }
+
+        /* --- 右侧滚动视口 --- */
+        .content-viewport {
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            overflow-y: auto; /* 核心：这是滚动容器 */
+            position: relative;
+            background: #fff;
+        }
+
+        .content-padding { padding: 24px 24px 0 24px; } 
+
+        .section-title { font-size: 16px; font-weight: bold; margin-bottom: 16px; color: #333; }
+
+        /* --- [WRAPPER] 包含表头、表格、浮动条的容器 --- */
+        .table-section-wrapper {
+            position: relative;
+            display: flex;       /* 使用 Flex 布局防止 margin 塌陷 */
+            flex-direction: column;
+            border: 1px solid #e8e8e8;
+            border-bottom: 0px; /* 底部边界由 Floating Bar 或 Rows 处理 */
+        }
+
+        /* 1. Sticky Header */
+        .sticky-header-area { 
+            position: sticky; top: 0; background: #fff; z-index: 20; 
+            padding-bottom: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06); /* 稍微加重阴影以便区分 */
+        }
+        
+        .toolbar-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 12px 12px 0 12px;}
+        .split-header { display: flex; gap: 32px; margin-bottom: 2px; padding: 0 12px;}
+        .header-box { flex: 1; height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border-radius: 4px 4px 0 0; font-size: 13px; font-weight: bold; }
+        .box-src { background: #e6f7ff; color: #333; }
+        .box-tgt { background: #d9f7be; color: #333; }
+        .target-config { display: flex; align-items: center; }
+        .badge { background: #1890ff; color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 2px; font-weight: normal; margin-right: 6px;}
+
+        /* Col Header */
+        .col-header { display: flex; background: #fafafa; border-top: 1px solid #e8e8e8; border-bottom: 1px solid #e8e8e8; font-size: 12px; color: #666; }
+        .col-group { flex: 1; display: flex; height: 40px; align-items: center; }
+        .col-gap { flex: 0 0 30px; }
+        .th-chk { width: 40px; text-align: center; }
+        .th-flex { flex: 1; padding-left: 8px; }
+        .th-sm { width: 60px; text-align: center; }
+        .th-op { width: 70px; text-align: center; }
+
+        /* 2. Rows (自然高度) */
+        .rows-list { 
+            background: #fff;
+            min-height: 100px;
+        }
+        .table-row { display: flex; height: 50px; border-bottom: 1px solid #e8e8e8; align-items: center; font-size: 13px; }
+        .table-row:hover { background: #fafafa; }
+        .row-left, .row-right { flex: 1; display: flex; height: 100%; align-items: center; }
+        .row-mid { flex: 0 0 30px; display: flex; justify-content: center; align-items: center; color:#ccc;}
+        .row-input { height: 28px; width: 92%; border: 1px solid #d9d9d9; border-radius: 2px; padding:0 6px;}
+
+        /* --- 3. [核心] 飞书式吸底浮层 (Sticky Bottom) --- */
+        .feishu-bar-sticky {
+            position: sticky; /* 关键：吸附定位 */
+            bottom: 0;        /* 吸附在视口底部 */
+            z-index: 50;      /* 层级高于普通行 */
+            
+            width: 100%;
+            height: 56px;     /* 标准操作栏高度 */
+            background: #fff;
+            
+            /* 飞书风格：上阴影 + 顶部边框 */
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.08); 
+            border-top: 1px solid #ebebeb;
+            border-bottom: 1px solid #e8e8e8; /* 闭合表格底边 */
+
+            /* 初始状态：隐藏 */
+            display: none; 
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .feishu-bar-sticky.active {
+            display: flex; /* 这里切换为 flex 即可触发 Sticky 行为 */
+            animation: slideUpFade 0.3s ease-out;
+        }
+
+        @keyframes slideUpFade {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* 浮层内部样式 */
+        .fb-left { display: flex; align-items: center; gap: 12px; }
+        .minus-btn {
+            width: 20px; height: 20px; background: #1890ff; color: #fff;
+            border-radius: 2px; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; cursor: pointer;
+        }
+        .sel-text { font-size: 14px; color: #666; }
+        .sel-num { font-weight: bold; color: #1890ff; margin: 0 4px; }
+
+        .fb-right { display: flex; gap: 12px; }
+        .fb-btn {
+            height: 32px; padding: 0 16px; border: 1px solid #d9d9d9; border-radius: 4px;
+            cursor: pointer; font-size: 14px; display: flex; align-items: center;
+            background: #fff; transition: all 0.2s;
+        }
+        /* 蓝色幽灵按钮 */
+        .fb-btn.primary { color: #1890ff; border-color: #d9d9d9; }
+        .fb-btn.primary:hover { color: #1890ff; border-color: #1890ff; background: #e6f7ff; }
+        /* 红色幽灵按钮 */
+        .fb-btn.danger { color: #ff4d4f; border-color: #d9d9d9; }
+        .fb-btn.danger:hover { color: #ff4d4f; border-color: #ff4d4f; background: #fff1f0; }
+
+        /* --- 4. 写入方式 (流式布局在表格下方) --- */
+        .write-config-section { 
+            margin-top: 40px; 
+            padding: 24px; 
+            border-top: 1px solid #f0f0f0; 
+            margin-bottom: 20px; 
+        }
+        .cfg-row { display: flex; margin-bottom: 20px; font-size: 14px; }
+        .cfg-label { width: 120px; color: #333; font-weight: 500; }
+        .cfg-val { flex: 1; color: #333; display: flex; gap: 8px; flex-wrap: wrap; }
+        .pk-tag { background: #fff; border: 1px solid #d9d9d9; border-radius: 4px; padding: 0 10px; height: 24px; display: flex; align-items: center; font-size: 13px; }
+
+        /* Footer */
+        .modal-footer { height: 64px; border-top: 1px solid #e8e8e8; background: #fff; display: flex; align-items: center; justify-content: flex-end; padding: 0 24px; flex-shrink: 0; z-index: 101;}
+        .btn { height: 32px; padding: 0 16px; border: 1px solid #d9d9d9; background: #fff; border-radius: 2px; margin-left: 12px; cursor: pointer; font-size: 14px; }
+        .btn:hover { color: #1890ff; border-color: #1890ff; }
+        .btn-p { background: #1890ff; color: #fff; border-color: #1890ff; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<div class="modal-container">
+    <header class="modal-header">
+        <span>添加表</span>
+        <span class="close-btn">×</span>
+    </header>
+
+    <div class="steps-bar">
+        <div class="step-item"><span class="step-badge">1</span> 选择来源表</div>
+        <span class="step-arrow">>></span>
+        <div class="step-item active"><span class="step-badge">2</span> 字段映射与写入</div>
+    </div>
+
+    <!-- 全局表操作 -->
+    <div class="global-actions-bar">
+        <div class="global-batch-btn">
+            全部表批量操作 <span style="font-size:10px; margin-left:4px;">▼</span>
+        </div>
+    </div>
+
+    <div class="modal-body">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-search"><input class="search-input" placeholder="搜索表"></div>
+            <div class="tree-list">
+                <div class="tree-node active">📅 入库单查询_子表1</div>
+                <div class="tree-node">📅 货品价目表</div>
+            </div>
+        </div>
+        <div class="resizer" id="resizer"></div>
+
+        <!-- 滚动的内容区 -->
+        <div class="content-viewport">
+            
+            <div class="content-padding">
+                <div class="section-title">字段映射</div>
+
+                <!-- 【TABLE WRAPPER】 定义了 Sticky 的生效范围 -->
+                <div class="table-section-wrapper">
+                    
+                    <!-- 1. 表头 (Sticky Top) -->
+                    <div class="sticky-header-area">
+                        <div class="toolbar-top">
+                            <select style="height:32px; border:1px solid #ccc;"><option>同名映射</option></select>
+                            <div style="font-size:14px; color:#666; cursor:pointer;">+ 手动建表 &nbsp; ↻ 重新获取</div>
+                        </div>
+
+                        <div class="split-header">
+                            <div class="header-box box-src">
+                                <span><span class="badge">来源</span> 采购单查询</span>
+                                <span class="text-blue cursor-pointer">表处理</span>
+                            </div>
+                            <div class="header-box box-tgt">
+                                <div class="target-config">
+                                    <span class="badge" style="background:#52c41a">目标</span>
+                                    <input value="自动建表: 目标表Tabe1" style="height:26px; border:1px solid #ccc; width:200px; padding:0 4px; font-size:12px;">
+                                </div>
+                                <span>☰</span>
+                            </div>
+                        </div>
+
+                        <div class="col-header">
+                            <div class="col-group bg-blue-light" style="border-right:1px solid #fff;">
+                                <div class="th-chk"><input type="checkbox" id="checkAll"></div>
+                                <div class="th-flex">来源表字段</div>
+                                <div class="th-flex">类型</div>
+                                <div class="th-sm">主键</div>
+                                <div class="th-sm">NotNull</div>
+                            </div>
+                            <div class="col-gap"></div>
+                            <div class="col-group bg-green-light">
+                                <div class="th-flex">目标表字段</div>
+                                <div class="th-flex">类型</div>
+                                <div class="th-sm">物理主键</div>
+                                <div class="th-sm">NotNull</div>
+                                <div class="th-flex">注释</div>
+                                <div class="th-op"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 表格行 (自然流) -->
+                    <div class="rows-list" id="rowContainer"></div>
+
+                    <!-- 3. 【飞书式吸底浮层】 Sticky Bottom -->
+                    <!-- 关键：它在 table-section-wrapper 内，设置 sticky bottom: 0 -->
+                    <div class="feishu-bar-sticky" id="stickyBar">
+                        <div class="fb-left">
+                            <div class="minus-btn" id="uncheckBtn" title="取消全选">－</div>
+                            <span class="sel-text">已选择 <span class="sel-num" id="selCount">0</span> 个字段</span>
+                        </div>
+                        <div class="fb-right">
+                            <button class="fb-btn primary">恢复映射</button>
+                            <button class="fb-btn primary">修改类型</button>
+                            <button class="fb-btn danger">取消映射</button>
+                        </div>
+                    </div>
+
+                </div> <!-- End Table Wrapper -->
+            
+            </div> <!-- End Padding -->
+
+            <!-- 4. 写入方式 (在Wrapper外面，这样Bar滚动到底部时会“推”上去) -->
+            <div class="write-config-section">
+                <div class="section-title">写入方式</div>
+                <div style="border-bottom:1px solid #f0f0f0; margin-bottom:20px;"></div>
+                <div class="cfg-row">
+                    <span class="cfg-label">写入方式</span>
+                    <span class="cfg-val">直接将数据写入目标表</span>
+                </div>
+                <div class="cfg-row">
+                    <span class="cfg-label">主键映射 ?</span>
+                    <span class="cfg-val" id="pkContainer"></span>
+                </div>
+                <div class="cfg-row">
+                    <span class="cfg-label">主键冲突策略</span>
+                    <span class="cfg-val">主键相同，覆盖目标表数据</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer class="modal-footer">
+        <button class="btn">取消</button>
+        <button class="btn">上一步</button>
+        <button class="btn btn-p">确定</button>
+    </footer>
+</div>
+
+<script>
+    // 模拟较多数据以演示滚动效果
+    const fields = [
+        { name: '采购单号', type: 'number', key: true },
+        { name: '设备名称', type: 'string' },
+        { name: '规格型号', type: 'string' },
+        { name: '产品ID', type: 'string', key: true },
+        { name: '创建人', type: 'string' },
+        { name: '数量', type: 'int' },
+        { name: '备注', type: 'text' },
+        { name: '字段A', type: 'string' },
+        { name: '字段B', type: 'string' },
+        { name: '字段C', type: 'string' },
+        { name: '字段D', type: 'string' },
+        { name: '字段E', type: 'string' },
+        { name: '更新时间', type: 'datetime' },
+        { name: '状态', type: 'int' },
+        { name: '仓库ID', type: 'string' }
+    ];
+
+    const rowContainer = document.getElementById('rowContainer');
+    const pkContainer = document.getElementById('pkContainer');
+
+    // 渲染表格
+    function render() {
+        let html = '';
+        fields.forEach(f => {
+            html += `
+            <div class="table-row">
+                <div class="row-left">
+                    <div class="th-chk"><input type="checkbox" class="row-chk"></div>
+                    <div class="th-flex">${f.name}</div>
+                    <div class="th-flex text-gray">${f.type}</div>
+                    <div class="th-sm">${f.key ? '🔑' : ''}</div>
+                    <div class="th-sm"><input type="checkbox" disabled checked></div>
+                </div>
+                <div class="row-mid">➜</div>
+                <div class="row-right">
+                    <div class="th-flex"><input class="row-input" value="${f.name}"></div>
+                    <div class="th-flex"><input class="row-input" value="${f.type}"></div>
+                    <div class="th-sm"></div>
+                    <div class="th-sm"><input type="checkbox" checked></div>
+                    <div class="th-flex text-gray">--</div>
+                    <div class="th-op">🗑️</div>
+                </div>
+            </div>`;
+        });
+        rowContainer.innerHTML = html;
+        pkContainer.innerHTML = fields.filter(f=>f.key).map(f=>`<div class="pk-tag">${f.name}=${f.name}</div>`).join('');
+        bindEvents();
+    }
+
+    // 绑定交互
+    const stickyBar = document.getElementById('stickyBar');
+    const selCount = document.getElementById('selCount');
+    const checkAll = document.getElementById('checkAll');
+    const uncheckBtn = document.getElementById('uncheckBtn');
+
+    function bindEvents() {
+        const checks = document.querySelectorAll('.row-chk');
+        
+        const update = () => {
+            const n = Array.from(checks).filter(c=>c.checked).length;
+            if (n > 0) {
+                // 当有选中时，添加 active 类 -> display: flex -> sticky 生效
+                stickyBar.classList.add('active');
+                selCount.innerText = n;
+            } else {
+                stickyBar.classList.remove('active');
+            }
+            checkAll.checked = (n === checks.length && n > 0);
+            checkAll.indeterminate = (n > 0 && n < checks.length);
+        }
+
+        checks.forEach(c => c.addEventListener('change', update));
+        checkAll.addEventListener('change', e => {
+            checks.forEach(c => c.checked = e.target.checked);
+            update();
+        });
+        uncheckBtn.addEventListener('click', () => {
+            checks.forEach(c => c.checked = false);
+            checkAll.checked = false;
+            update();
+        });
+    }
+
+    // Resize Logic
+    const resizer = document.getElementById('resizer');
+    const sidebar = document.getElementById('sidebar');
+    let isResizing = false;
+    resizer.addEventListener('mousedown', () => { isResizing = true; document.body.style.cursor='col-resize'; });
+    document.addEventListener('mousemove', e => {
+        if(isResizing) {
+            const w = e.clientX - sidebar.parentElement.getBoundingClientRect().left;
+            if(w > 150 && w < 500) sidebar.style.width = w + 'px';
+        }
+    });
+    document.addEventListener('mouseup', () => { isResizing = false; document.body.style.cursor='default'; });
+
+    render();
+</script>
+</body>
+</html>

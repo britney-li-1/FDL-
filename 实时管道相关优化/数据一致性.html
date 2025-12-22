@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据一致性 - 同步延迟配置</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+
+        body {
+            background-color: #f5f6f7;
+            padding: 40px;
+            color: #1f2329;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1f2329;
+        }
+
+        .config-section {
+            margin-bottom: 32px;
+        }
+
+        .config-item {
+            margin-bottom: 24px;
+        }
+
+        .config-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #646a73;
+            font-weight: 500;
+        }
+
+        .help-icon {
+            width: 14px;
+            height: 14px;
+            margin-left: 4px;
+            color: #646a73;
+            cursor: help;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .number-input {
+            width: 120px;
+            height: 32px;
+            border: 1px solid #dee0e3;
+            border-radius: 4px;
+            padding: 0 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .number-input:focus {
+            border-color: #3370ff;
+        }
+
+        .number-input.error {
+            border-color: #f56c6c;
+        }
+
+        .unit-select {
+            width: 80px;
+            height: 32px;
+            border: 1px solid #dee0e3;
+            border-radius: 4px;
+            padding: 0 8px;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%23646a73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+        }
+
+        .unit-select:focus {
+            border-color: #3370ff;
+        }
+
+        .description {
+            font-size: 13px;
+            color: #646a73;
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+
+        .error-message {
+            font-size: 12px;
+            color: #f56c6c;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            font-size: 14px;
+            color: #1f2329;
+            cursor: pointer;
+        }
+
+        .scheme-selector {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #dee0e3;
+        }
+
+        .scheme-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .scheme-option {
+            margin-bottom: 12px;
+        }
+
+        .scheme-radio {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .scheme-label {
+            font-size: 14px;
+            color: #1f2329;
+            cursor: pointer;
+        }
+
+        .scheme-desc {
+            font-size: 12px;
+            color: #646a73;
+            margin-left: 24px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">同步延迟配置</h1>
+
+        <div class="checkbox-wrapper">
+            <input type="checkbox" id="syncDelayEnabled" class="checkbox" checked>
+            <label for="syncDelayEnabled" class="checkbox-label">同步延迟</label>
+            <svg class="help-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+            </svg>
+        </div>
+
+        <div class="config-section" id="configSection">
+            <!-- 单表延迟阈值 -->
+            <div class="config-item">
+                <div class="config-label">单表延迟阈值</div>
+                <div class="input-row">
+                    <input 
+                        type="number" 
+                        id="delayThreshold" 
+                        class="number-input" 
+                        placeholder="请输入"
+                        min="0"
+                        step="1"
+                    >
+                    <select id="delayThresholdUnit" class="unit-select">
+                        <option value="minute">分钟</option>
+                        <option value="hour">小时</option>
+                    </select>
+                </div>
+                <div class="error-message" id="delayThresholdError"></div>
+                <div class="description">
+                    当任务中任一表的同步延迟超过阈值时,发送通知
+                </div>
+            </div>
+
+            <!-- 通知间隔 -->
+            <div class="config-item">
+                <div class="config-label">通知间隔</div>
+                <div class="input-row">
+                    <input 
+                        type="number" 
+                        id="notificationInterval" 
+                        class="number-input" 
+                        placeholder="请输入"
+                        min="0"
+                        step="1"
+                    >
+                    <select id="notificationIntervalUnit" class="unit-select">
+                        <option value="minute">分钟</option>
+                        <option value="hour">小时</option>
+                    </select>
+                </div>
+                <div class="error-message" id="notificationIntervalError"></div>
+                <div class="description">
+                    触发通知后,在通知间隔内,不再发送新通知
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案选择器 -->
+        <div class="scheme-selector">
+            <div class="scheme-title">校验方案选择</div>
+            <div class="scheme-option">
+                <input type="radio" name="scheme" id="scheme1" class="scheme-radio" value="1" checked>
+                <label for="scheme1" class="scheme-label">方案一：单位切换时保持数值不变，重新校验（基于实际时间）</label>
+                <div class="scheme-desc">切换单位时，输入框数值保持不变，但校验基于实际时间（分钟数）。例如：30分钟切换为小时时，显示30小时，但实际是1800分钟，满足>=30分钟的要求；如果输入20分钟切换为小时，显示20小时（实际1200分钟），也满足要求。</div>
+            </div>
+            <div class="scheme-option">
+                <input type="radio" name="scheme" id="scheme2" class="scheme-radio" value="2">
+                <label for="scheme2" class="scheme-label">方案二：单位切换时保持数值不变，重新校验（同方案一）</label>
+                <div class="scheme-desc">由于只允许输入整数，不进行数值转换。切换单位时，输入框数值保持不变，仅根据新单位重新校验实际时间。例如：30分钟切换为小时时，显示30小时（实际1800分钟），满足要求。</div>
+            </div>
+            <div class="scheme-option">
+                <input type="radio" name="scheme" id="scheme3" class="scheme-radio" value="3">
+                <label for="scheme3" class="scheme-label">方案三：单位切换时，如果实际时间不满足要求则自动调整为最小值</label>
+                <div class="scheme-desc">切换单位时，保持数值不变；如果实际时间不满足要求（如单表延迟阈值<30分钟），则自动调整为满足要求的最小整数。例如：20分钟切换为小时时，显示20小时（实际1200分钟），满足要求；如果输入10分钟切换为小时，显示10小时（实际600分钟），也满足要求；但如果输入0小时且实际时间<30分钟，则自动调整为1小时。</div>
+            </div>
+            <div class="scheme-option">
+                <input type="radio" name="scheme" id="scheme4" class="scheme-radio" value="4">
+                <label for="scheme4" class="scheme-label">方案四：单位切换时清空输入框，提示用户重新输入</label>
+                <div class="scheme-desc">切换单位时，清空输入框，让用户根据新单位重新输入。最安全但用户体验稍差，需要用户重新输入。</div>
+            </div>
+            <div class="scheme-option">
+                <input type="radio" name="scheme" id="scheme5" class="scheme-radio" value="5">
+                <label for="scheme5" class="scheme-label">方案五：单位切换时保持数值不变，如果实际时间不满足要求则标记为错误</label>
+                <div class="scheme-desc">切换单位时，保持数值不变；如果实际时间不满足要求（如单表延迟阈值<30分钟），显示错误提示，让用户手动调整。例如：20分钟切换为小时时，显示20小时（实际1200分钟），满足要求；但如果输入0小时且实际时间<30分钟，则显示错误提示"不能低于30分钟"。</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置项
+        const config = {
+            delayThreshold: {
+                input: document.getElementById('delayThreshold'),
+                unit: document.getElementById('delayThresholdUnit'),
+                error: document.getElementById('delayThresholdError'),
+                minMinutes: 30  // 实际时间必须 >= 30分钟
+            },
+            notificationInterval: {
+                input: document.getElementById('notificationInterval'),
+                unit: document.getElementById('notificationIntervalUnit'),
+                error: document.getElementById('notificationIntervalError'),
+                minMinutes: 0  // 实际时间必须 >= 0分钟
+            }
+        };
+
+        const syncDelayEnabled = document.getElementById('syncDelayEnabled');
+        const configSection = document.getElementById('configSection');
+        const schemeRadios = document.querySelectorAll('input[name="scheme"]');
+
+        let currentScheme = '1';
+
+        // 将输入值转换为分钟数
+        function convertToMinutes(value, unit) {
+            if (unit === 'hour') {
+                return value * 60;
+            }
+            return value;
+        }
+
+        // 将分钟数转换为指定单位的值
+        function convertFromMinutes(minutes, unit) {
+            if (unit === 'hour') {
+                return minutes / 60;
+            }
+            return minutes;
+        }
+
+        // 初始化
+        function init() {
+            // 方案选择监听
+            schemeRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    currentScheme = e.target.value;
+                    // 重新校验所有输入
+                    validateAll();
+                });
+            });
+
+            // 同步延迟开关
+            syncDelayEnabled.addEventListener('change', (e) => {
+                configSection.style.display = e.target.checked ? 'block' : 'none';
+            });
+
+            // 为每个配置项绑定事件
+            Object.keys(config).forEach(key => {
+                const item = config[key];
+                
+                // 记录初始单位
+                item.unit.dataset.previousUnit = item.unit.value;
+                
+                // 输入框失焦校验
+                item.input.addEventListener('blur', () => {
+                    validateInput(key);
+                });
+
+                // 输入框输入时实时校验
+                item.input.addEventListener('input', () => {
+                    validateInput(key);
+                });
+
+                // 单位切换
+                item.unit.addEventListener('change', () => {
+                    handleUnitChange(key);
+                });
+            });
+
+            // 初始校验
+            validateAll();
+        }
+
+        // 获取错误提示信息
+        function getErrorMessage(itemKey, unit) {
+            const item = config[itemKey];
+            const minMinutes = item.minMinutes;
+            
+            if (minMinutes === 0) {
+                return '请输入大于等于0的值';
+            }
+            
+            // 单表延迟阈值需要明确告知不能低于30分钟
+            if (itemKey === 'delayThreshold') {
+                if (unit === 'minute') {
+                    return '不能低于30分钟，请输入大于等于30的值';
+                } else {
+                    // 小时单位时，30分钟=0.5小时，向上取整为1小时（因为只允许整数）
+                    const minHours = Math.ceil(minMinutes / 60); // 向上取整为整数
+                    return `不能低于30分钟，请输入大于等于${minHours}的值（至少30分钟）`;
+                }
+            }
+            
+            // 其他配置项使用通用提示
+            if (unit === 'minute') {
+                return `请输入大于等于${minMinutes}的值`;
+            } else {
+                const minHours = Math.ceil(minMinutes / 60 * 2) / 2;
+                return `请输入大于等于${minHours}的值（至少${minMinutes}分钟）`;
+            }
+        }
+
+        // 校验单个输入框（基于实际时间）
+        function validateInput(itemKey) {
+            const item = config[itemKey];
+            const value = parseFloat(item.input.value);
+            const unit = item.unit.value;
+            const minMinutes = item.minMinutes;
+
+            // 清空之前的错误状态
+            item.input.classList.remove('error');
+            item.error.classList.remove('show');
+            item.error.textContent = '';
+
+            // 如果为空，不显示错误（允许为空）
+            if (item.input.value === '' || isNaN(value)) {
+                return true;
+            }
+
+            // 校验是否为整数
+            if (!Number.isInteger(value) || value < 0) {
+                item.input.classList.add('error');
+                item.error.textContent = '请输入大于等于0的整数';
+                item.error.classList.add('show');
+                return false;
+            }
+
+            // 转换为分钟数进行校验
+            const actualMinutes = convertToMinutes(value, unit);
+
+            // 校验最小值（基于实际时间）
+            if (actualMinutes < minMinutes) {
+                item.input.classList.add('error');
+                item.error.textContent = getErrorMessage(itemKey, unit);
+                item.error.classList.add('show');
+                return false;
+            }
+
+            return true;
+        }
+
+        // 处理单位切换
+        function handleUnitChange(itemKey) {
+            const item = config[itemKey];
+            const currentValue = parseFloat(item.input.value);
+            const oldUnit = item.unit.dataset.previousUnit || item.unit.options[0].value;
+            const newUnit = item.unit.value;
+            
+            // 保存当前单位
+            item.unit.dataset.previousUnit = newUnit;
+
+            // 如果输入框为空，直接校验
+            if (item.input.value === '' || isNaN(currentValue)) {
+                validateInput(itemKey);
+                return;
+            }
+
+            // 先转换为分钟数（统一基准）
+            const actualMinutes = convertToMinutes(currentValue, oldUnit);
+
+            switch (currentScheme) {
+                case '1': // 方案一：保持数值不变，重新校验
+                    // 数值不变，只重新校验（基于实际时间）
+                    validateInput(itemKey);
+                    break;
+
+                case '2': // 方案二：保持数值不变，重新校验（不转换）
+                    // 由于只允许整数，不进行数值转换，保持数值不变
+                    validateInput(itemKey);
+                    break;
+
+                case '3': // 方案三：不满足要求时自动调整为最小值
+                    const minMinutes = item.minMinutes;
+                    if (actualMinutes < minMinutes) {
+                        // 如果实际时间不满足要求，计算满足要求的最小整数
+                        // 例如：30分钟 = 0.5小时，向上取整为1小时
+                        const minValue = convertFromMinutes(minMinutes, newUnit);
+                        item.input.value = Math.ceil(minValue); // 向上取整为整数
+                    }
+                    // 否则保持数值不变
+                    validateInput(itemKey);
+                    break;
+
+                case '4': // 方案四：清空输入框
+                    item.input.value = '';
+                    item.input.classList.remove('error');
+                    item.error.classList.remove('show');
+                    item.error.textContent = '';
+                    break;
+
+                case '5': // 方案五：保留原值但标记为错误（基于实际时间校验）
+                    // 保持数值不变，只重新校验（如果实际时间不满足要求会显示错误）
+                    validateInput(itemKey);
+                    break;
+            }
+        }
+
+        // 校验所有输入
+        function validateAll() {
+            Object.keys(config).forEach(key => {
+                validateInput(key);
+            });
+        }
+
+        // 页面加载完成后初始化
+        init();
+    </script>
+</body>
+</html>

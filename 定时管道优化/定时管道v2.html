@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定时管道 - 帆软软件</title>
+    <!-- 引入图标库 Remix Icon 用于高保真还原图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #3265f5;
+            --header-bg: #fdfdfd;
+            --sidebar-bg: #eceef4;
+            --border-color: #dee0e8;
+            --text-main: #1f2329;
+            --text-secondary: #646a73;
+            --text-placeholder: #8f959e;
+            --bg-body: #f5f6fa;
+            --hover-bg: #f2f3f5;
+            --table-header-bg: #f5f6fa;
+            --nav-width: 60px;
+            --sub-nav-width: 260px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-body);
+            overflow: hidden;
+            font-size: 13px;
+        }
+
+        /* Top Header */
+        .top-header {
+            height: 48px;
+            background: #fff;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 100;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-blue);
+            color: white;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-secondary);
+        }
+
+        .sys-dropdown {
+            background: #eef2fe;
+            color: var(--text-main);
+            padding: 4px 12px;
+            border-radius: 14px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        /* Main Container */
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* 1. Left Nav (Icons) */
+        .left-nav {
+            width: var(--nav-width);
+            background: #f7f8fa;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 12px;
+            flex-shrink: 0;
+        }
+
+        .nav-item {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 10px;
+            gap: 2px;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+        }
+
+        .nav-item.active {
+            background: #e6f0ff;
+            color: var(--primary-blue);
+        }
+        
+        .nav-item:hover:not(.active) {
+            background: #e9e9e9;
+        }
+
+        /* 2. Sub Nav (Task List) */
+        .sub-nav {
+            width: var(--sub-nav-width);
+            background: #fff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sub-nav-header {
+            padding: 16px;
+        }
+
+        .sub-nav-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-primary-sm {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 6px 8px 6px 28px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            outline: none;
+            font-size: 12px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-placeholder);
+        }
+
+        .tree-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 8px;
+        }
+
+        .tree-item {
+            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 4px;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+
+        .tree-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .tree-item.active {
+            background-color: #e6f1fc;
+            color: var(--primary-blue);
+        }
+
+        .indent { width: 16px; display: inline-block; }
+        .icon-folder { color: #f2c058; margin-right: 6px; }
+        .icon-task { color: #5b8ff9; margin-right: 6px; }
+        .arrow { font-size: 16px; color: var(--text-placeholder); margin-right: 2px; transition: transform 0.2s; }
+        .arrow.down { transform: rotate(90deg); }
+
+        /* 3. Main Content */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            overflow: hidden;
+            min-width: 0; /* Enable flex child shrinking */
+        }
+
+        /* Workspace Header */
+        .workspace-header {
+            padding: 16px 24px 0;
+        }
+
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .task-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+        }
+
+        .meta-info {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .meta-info span { margin-right: 20px; }
+        .meta-label { color: #999; }
+        .meta-value { color: #333; }
+
+        .connection-box {
+            background: #f7f9fb;
+            border: 1px solid #edf0f5;
+            border-radius: 4px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+
+        .conn-visual {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 0;
+            font-weight: 500;
+        }
+        
+        .conn-arrow {
+            color: var(--primary-blue);
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        /* Collapsible More Info */
+        .more-info-toggle {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--text-main);
+            cursor: pointer;
+            margin-top: 8px;
+            user-select: none;
+        }
+        .more-info-toggle i { font-size: 16px; transition: 0.2s; }
+        .more-info-toggle.collapsed i { transform: rotate(-90deg); }
+        
+        .more-info-content {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            max-height: 200px; /* Adjust based on content */
+        }
+        .more-info-content.hidden {
+            max-height: 0;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 24px;
+            margin-top: 8px;
+        }
+
+        .tab-item {
+            padding: 10px 0;
+            cursor: pointer;
+            position: relative;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .tab-item.active {
+            color: var(--primary-blue);
+        }
+
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary-blue);
+        }
+
+        /* Content Body (Toolbar + Table) */
+        .content-body {
+            flex: 1;
+            padding: 16px 24px;
+            background: #fff;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .btn-add-table {
+            background: #e6f0ff;
+            color: var(--primary-blue);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .toolbar-right {
+           display: flex;
+           gap: 12px;
+           align-items: center;
+        }
+
+        /* Complex Table Styles */
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 1200px; /* Ensure scrolling happens */
+            table-layout: fixed;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+            background: #fff;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #f5f6fa;
+            color: var(--text-secondary);
+            font-weight: 500;
+            height: 48px;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        
+        /* Column Widths */
+        .col-source { width: 300px; }
+        .col-type { width: 100px; }
+        .col-target { width: 220px; }
+        .col-write { width: 180px; }
+        .col-break { width: 150px; }
+        .col-start { width: 180px; }
+        .col-limit { width: 150px; }
+        .col-action { width: 120px; }
+
+        /* Sticky Columns Logic */
+        /* Left Sticky (Checkbox + Source) */
+        .sticky-left {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+        
+        th.sticky-left { z-index: 30; }
+
+        /* Right Sticky (Actions) */
+        .sticky-right {
+            position: sticky;
+            right: 0;
+            z-index: 10;
+            box-shadow: -2px 0 6px rgba(0,0,0,0.03); /* Subtle shadow */
+        }
+        
+        th.sticky-right { z-index: 30; }
+
+        /* Add shadow to left sticky when scrolling (optional implementation, simplified here) */
+        .sticky-left::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: -5px;
+            bottom: 0;
+            width: 5px;
+            pointer-events: none;
+            /* box-shadow would go here but needs js trigger usually, utilizing z-index overlap instead */
+        }
+
+        /* Category Row Styling - The Trick */
+        .tr-category {
+            background: #fafafa;
+        }
+        
+        .tr-category td {
+            padding: 0;
+            border-bottom: 1px solid #eee;
+            background: #fafafa;
+        }
+
+        /* This allows the classification title to stick to the left within the full-width cell */
+        .category-content {
+            position: sticky;
+            left: 0;
+            padding: 10px 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 9;
+            width: fit-content; /* Important: shrink to content so it doesn't overlap text if centered */
+        }
+
+        /* Tree structure in table */
+        .sub-table-row td.sticky-left {
+            padding-left: 0; /* Removing padding to handle the tree structure manually */
+        }
+        
+        .tree-structure-box {
+            display: flex;
+            align-items: center;
+            padding-left: 20px; /* Base indent */
+        }
+        
+        .tree-L-shape {
+            width: 24px;
+            height: 24px;
+            border-left: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            margin-right: 8px;
+            margin-top: -12px; /* Pull up to connect */
+            display: inline-block;
+        }
+
+        /* Action Icons */
+        .action-icon {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin: 0 4px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .action-icon:hover { color: var(--primary-blue); }
+        .action-link { color: var(--primary-blue); cursor: pointer; text-decoration: none; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-main);
+        }
+        .info-icon { color: #8f959e; cursor: help; margin-left: 2px;}
+
+    </style>
+</head>
+<body>
+
+    <!-- 1. Top Header -->
+    <header class="top-header">
+        <div class="logo-area">
+            <div class="logo-icon">F</div>
+            <span>帆软软件有限公司</span>
+        </div>
+        <div class="header-right">
+            <div class="sys-dropdown">
+                <i class="ri-settings-3-fill" style="color:#5c82f0"></i> 管理系统 <i class="ri-arrow-down-s-fill"></i>
+            </div>
+            <i class="ri-notification-3-line" style="font-size: 18px; cursor: pointer;"></i>
+            <i class="ri-question-fill" style="font-size: 18px; cursor: pointer;"></i>
+            <div style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <i class="ri-user-fill"></i> 用户名 <i class="ri-arrow-down-s-fill"></i>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- 2. Left Icon Sidebar -->
+        <nav class="left-nav">
+            <div class="nav-item">
+                <i class="ri-dashboard-line"></i>
+                <span>运维中心</span>
+            </div>
+            <div class="nav-item active">
+                <i class="ri-flow-chart"></i>
+                <span>数据管道</span>
+            </div>
+            <div class="nav-item">
+                <i class="ri-database-2-line"></i>
+                <span>数据开发</span>
+            </div>
+            <div class="nav-item">
+                <i class="ri-service-line"></i>
+                <span>数据服务</span>
+            </div>
+            <div class="nav-item">
+                <i class="ri-book-read-line"></i>
+                <span>数据管理</span>
+            </div>
+        </nav>
+
+        <!-- 3. Middle Task Sidebar -->
+        <aside class="sub-nav">
+            <div class="sub-nav-header">
+                <div class="sub-nav-title">
+                    <span>定时管道</span>
+                    <button class="btn-primary-sm"><i class="ri-add-line"></i> 新建</button>
+                </div>
+                <div class="search-box">
+                    <i class="ri-search-line"></i>
+                    <input type="text" placeholder="搜索任务/文件夹">
+                    <i class="ri-refresh-line" style="position: absolute; right: 8px; top:50%; transform:translateY(-50%); left:auto; cursor:pointer;"></i>
+                </div>
+                <div style="margin-top: 12px; color: #666; font-size: 12px;">所有任务</div>
+            </div>
+            <div class="tree-list">
+                <!-- Folder 1 -->
+                <div class="tree-item">
+                    <i class="ri-arrow-drop-right-fill arrow"></i>
+                    <i class="ri-folder-fill icon-folder"></i>
+                    <span>文件夹1</span>
+                </div>
+                <!-- Folder Expanded -->
+                <div>
+                   <div class="tree-item active" style="padding-left: 20px;">
+                        <i class="ri-file-list-3-line icon-task"></i>
+                        <span>文件夹2 (Expanded)</span>
+                   </div>
+                   <!-- Task Examples similar to screenshot -->
+                   <div class="tree-item" style="padding-left: 40px;">
+                        <i class="ri-file-list-3-line icon-task"></i>
+                        <span>任务1</span>
+                   </div>
+                   <div class="tree-item" style="padding-left: 40px;">
+                        <i class="ri-file-list-3-line icon-task"></i>
+                        <span>任务2</span>
+                   </div>
+                </div>
+                <div class="tree-item">
+                    <i class="ri-arrow-drop-right-fill arrow"></i>
+                    <i class="ri-folder-fill icon-folder"></i>
+                    <span>文件夹3</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 4. Main Content Area -->
+        <main class="content-area">
+            <!-- Header Info -->
+            <div class="workspace-header">
+                <div class="title-row">
+                    <div class="task-title">
+                        <i class="ri-flow-chart" style="color:var(--primary-blue)"></i>
+                        定时管道任务1
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn-outline"><i class="ri-settings-3-line"></i> 任务控制</button>
+                        <button class="btn-outline"><i class="ri-time-line"></i> 定时调度</button>
+                    </div>
+                </div>
+                
+                <div class="meta-info">
+                    <span class="meta-label">创建人：</span><span class="meta-value">Lana</span>
+                    <span class="meta-label">创建时间：</span><span class="meta-value">2023-03-02 12:10:10</span>
+                    <span class="meta-label">定时调度：</span><span class="meta-value" style="border-bottom: 1px dotted #ccc;">未配置</span>
+                </div>
+                <div class="meta-info">
+                    <span class="meta-label">描述：</span><span class="meta-value">描述文案描述文案描述文案描述文案描述文案描述文案描述文案...</span>
+                </div>
+
+                <div class="connection-box">
+                    <div class="conn-visual">
+                        <i class="ri-database-2-fill" style="color:#3e7bf6;"></i>
+                        <span>吉客云·<strong style="color:black">_5.175数据连接</strong></span>
+                        <span class="conn-arrow">→</span>
+                        <i class="ri-twitter-fill" style="color:#3e7bf6;"></i> <!-- Using bird icon as proxy for custom logo -->
+                        <span>MySQL·<strong style="color:black">MySQL</strong> (default)</span>
+                        <i class="ri-pencil-line" style="margin-left:auto; cursor: pointer; color:#999; border:1px solid #ddd; padding:4px; border-radius:4px;"></i>
+                    </div>
+                    
+                    <div class="more-info-toggle" id="moreInfoBtn">
+                        <i class="ri-arrow-down-s-fill"></i> 更多信息
+                    </div>
+                    <div class="more-info-content" id="moreInfoContent">
+                        <div style="padding: 8px 0;">
+                            <span style="color:#999">同步源表结构变化：</span><span>已开启</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tabs">
+                    <div class="tab-item active">同步配置</div>
+                    <div class="tab-item">运行记录</div>
+                </div>
+            </div>
+
+            <!-- Table Area -->
+            <div class="content-body">
+                <div class="toolbar">
+                    <button class="btn-add-table"><i class="ri-add-circle-line"></i> 添加表</button>
+                    <div class="toolbar-right">
+                         <i class="ri-search-line" style="font-size:18px; color: #666; cursor:pointer;"></i>
+                         <button class="btn-outline" style="border:none; color:#666;"><i class="ri-play-circle-line"></i> 运行所有表</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <colgroup>
+                            <col class="col-source">
+                            <col class="col-type">
+                            <col class="col-target">
+                            <col class="col-write">
+                            <col class="col-break">
+                            <col class="col-start">
+                            <col class="col-limit">
+                            <col class="col-action">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th class="sticky-left"><input type="checkbox" style="margin-right:8px; vertical-align:middle;"> 来源表</th>
+                                <th>表类型 <i class="ri-filter-3-fill" style="font-size:12px;"></i></th>
+                                <th>目标表</th>
+                                <th>写入方式</th>
+                                <th>当前断点(下次起点) <i class="ri-information-line info-icon"></i></th>
+                                <th>首次同步起点 <i class="ri-information-line info-icon"></i></th>
+                                <th>今日调用余量</th>
+                                <th class="sticky-right" style="text-align: center;"><i class="ri-settings-3-line"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Category Row 1 -->
+                            <tr class="tr-category">
+                                <td colspan="8">
+                                    <div class="category-content">
+                                        <i class="ri-arrow-down-s-fill"></i> 分类：基础类
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Normal Row -->
+                            <tr>
+                                <td class="sticky-left bg-white"><input type="checkbox" style="margin-right:8px;"> 店铺查询 <i class="ri-information-line info-icon"></i></td>
+                                <td>全量表</td>
+                                <td>店铺查询</td>
+                                <td>清空目标表，再写入数据 <i class="ri-information-line info-icon"></i></td>
+                                <td>--</td>
+                                <td>全量表，无需配置</td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="sticky-right bg-white" style="text-align: center;">
+                                    <i class="ri-pencil-line action-icon"></i>
+                                    <i class="ri-play-circle-line action-icon"></i>
+                                    <i class="ri-delete-bin-line action-icon"></i>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-left bg-white"><input type="checkbox" style="margin-right:8px;"> 仓库查询 <i class="ri-information-line info-icon"></i></td>
+                                <td>全量表</td>
+                                <td>仓库查询</td>
+                                <td>清空目标表，再写入数据 <i class="ri-information-line info-icon"></i></td>
+                                <td>--</td>
+                                <td>全量表，无需配置</td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="sticky-right bg-white" style="text-align: center;">
+                                    <i class="ri-pencil-line action-icon"></i>
+                                    <i class="ri-play-circle-line action-icon"></i>
+                                    <i class="ri-delete-bin-line action-icon"></i>
+                                </td>
+                            </tr>
+
+                            <!-- Category Row 2 -->
+                            <tr class="tr-category">
+                                <td colspan="8">
+                                    <div class="category-content">
+                                        <i class="ri-arrow-down-s-fill"></i> 分类：库存类
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Normal Row -->
+                             <tr>
+                                <td class="sticky-left bg-white"><input type="checkbox" style="margin-right:8px;"> 盘点入库单查询 <i class="ri-information-line info-icon"></i></td>
+                                <td>全量表</td>
+                                <td>盘点入库单查询</td>
+                                <td>清空目标表，再写入数据 <i class="ri-information-line info-icon"></i></td>
+                                <td>--</td>
+                                <td>全量表，无需配置</td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="sticky-right bg-white" style="text-align: center;">
+                                    <i class="ri-pencil-line action-icon"></i>
+                                    <i class="ri-play-circle-line action-icon"></i>
+                                    <i class="ri-delete-bin-line action-icon"></i>
+                                </td>
+                            </tr>
+                            <!-- Sub Table Row (Tree Structure) -->
+                            <tr class="sub-table-row">
+                                <td class="sticky-left bg-white">
+                                    <div class="tree-structure-box">
+                                        <!-- Visualizing the L curve line -->
+                                        <div style="width:20px; height: 30px; display:inline-block; position:relative; margin-right:5px;">
+                                            <div style="position:absolute; top:-15px; left:10px; bottom:15px; width:1px; background:#ddd;"></div>
+                                            <div style="position:absolute; bottom:15px; left:10px; width:10px; height:1px; background:#ddd;"></div>
+                                        </div>
+                                        货品档案查询_单品信息详情
+                                    </div>
+                                </td>
+                                <td>全量子表</td>
+                                <td>货品档案查询_单品信息详情</td>
+                                <td>清空目标表，再等值更新 <i class="ri-information-line info-icon"></i></td>
+                                <td style="color:#999">跟随主表</td>
+                                <td style="color:#999">跟随主表</td>
+                                <td style="color:#999">跟随主表</td>
+                                <td class="sticky-right bg-white" style="text-align: center;">
+                                    <i class="ri-pencil-line action-icon"></i>
+                                </td>
+                            </tr>
+
+                            <!-- Complex Time Row -->
+                            <tr>
+                                <td class="sticky-left bg-white"><input type="checkbox" style="margin-right:8px;"> 入库瞬时成本查询 <i class="ri-information-line info-icon"></i></td>
+                                <td>增量表</td>
+                                <td>入库瞬时成本查询</td>
+                                <td>直接将数据写入目标表 <i class="ri-information-line info-icon"></i></td>
+                                <td>2025-11-24 11:20:30 <i class="ri-information-line info-icon"></i></td>
+                                <td>2024-3-22 12:10:10</td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="sticky-right bg-white" style="text-align: center;">
+                                    <i class="ri-pencil-line action-icon"></i>
+                                    <i class="ri-play-circle-line action-icon"></i>
+                                    <i class="ri-delete-bin-line action-icon"></i>
+                                </td>
+                            </tr>
+                            <!-- Sub Table Row 2 -->
+                            <tr class="sub-table-row">
+                                <td class="sticky-left bg-white">
+                                    <div class="tree-structure-box">
+                                        <div style="width:20px; height: 30px; display:inline-block; position:relative; margin-right:5px;">
+                                            <div style="position:absolute; top:-15px; left:10px; bottom:15px; width:1px; background:#ddd;"></div>
+                                            <div style="position:absolute; bottom:15px; left:10px; width:10px; height:1px; background:#ddd;"></div>
+                                        </div>
+                                        入库瞬时成本查询_明细
+                                    </div>
+                                </td>
+                                <td>增量子表</td>
+                                <td>入库瞬时成本查询_明细</td>
+                                <td>等值更新：基于等值字段的... <i class="ri-information-line info-icon"></i></td>
+                                <td style="color:#999">跟随主表</td>
+                                <td style="color:#999">跟随主表</td>
+                                <td style="color:#999">跟随主表</td>
+                                <td class="sticky-right bg-white" style="text-align: center;">
+                                    <i class="ri-pencil-line action-icon"></i>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Footer Summary -->
+                <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+                    已添加 <span style="color:var(--primary-blue); font-weight:bold;">6</span> 张表，其中有4张主表、2张子表
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Logic for Collapsible Info
+        const infoBtn = document.getElementById('moreInfoBtn');
+        const infoContent = document.getElementById('moreInfoContent');
+        
+        infoBtn.addEventListener('click', () => {
+            infoBtn.classList.toggle('collapsed');
+            infoContent.classList.toggle('hidden');
+        });
+
+        // Basic Tab switching Visual
+        const tabs = document.querySelectorAll('.tab-item');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+
+        // Manual Style Fix for sticky backgrounds on rows
+        // Ensure the cells have white background so content underneath doesn't show through when scrolling
+        const stickyCells = document.querySelectorAll('.sticky-left, .sticky-right');
+        stickyCells.forEach(cell => {
+           if (!cell.classList.contains('bg-white') && cell.tagName === 'TD') {
+               cell.style.backgroundColor = '#fff';
+           }
+        });
+    </script>
+</body>
+</html>

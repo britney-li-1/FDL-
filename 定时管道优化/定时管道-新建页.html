@@ -1,0 +1,2385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FineDataLink - 定时管道任务</title>
+    <!-- 引入 FontAwesome 图标库 (用于弹窗) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* 统一使用主页面品牌色 */
+            --primary-blue: #3370ff;
+            --primary-hover: #235add;
+            --bg-body: #f5f6f7;
+            --sidebar-width: 56px;
+            --text-main: #1f2329;
+            --text-sub: #646a73;
+            --border-color: #dee0e3;
+            --disabled-bg: #eeffff;
+            --tag-source-bg: #e8f3ff;
+            --tag-source-text: #3370ff;
+            --tag-target-bg: #e3f9e9;
+            --tag-target-text: #2ba471;
+            
+            /* 弹窗专用变量 (复用或新增) */
+            --text-regular: #606266;
+            --text-secondary: #909399;
+            --hover-bg: #f5f7fa;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ------------------- 主页面样式 ------------------- */
+        
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: #fff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 16px;
+            z-index: 10;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 24px;
+            cursor: pointer;
+        }
+
+        .nav-item {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            color: var(--text-sub);
+            font-size: 10px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: #eff3f6;
+            color: var(--primary-blue);
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            margin-bottom: 2px;
+            fill: currentColor;
+        }
+
+        .nav-item.active svg {
+            fill: var(--primary-blue);
+        }
+        
+        .sidebar-bottom {
+            margin-top: auto;
+            margin-bottom: 16px;
+        }
+
+        /* Main Content */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            height: 56px;
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--text-main);
+        }
+        
+        .header-logo-text {
+            margin-left: 8px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .system-select {
+            background: #f2f3f5;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .icon-btn {
+            color: var(--text-sub);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Breadcrumb Bar */
+        .breadcrumb-bar {
+            height: 48px;
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            color: var(--text-sub);
+            font-size: 14px;
+            margin-right: 16px;
+            cursor: pointer;
+        }
+        
+        .back-btn:hover {
+            color: var(--primary-blue);
+        }
+
+        .page-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .edit-icon {
+            margin-left: 8px;
+            color: var(--text-sub);
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Scroll Area */
+        .content-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        /* White Card Panel */
+        .config-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            padding: 24px;
+            min-height: 600px;
+            padding-bottom: 80px;
+        }
+
+        /* Top Config Section (Split) */
+        .config-split {
+            display: flex;
+            gap: 24px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 24px;
+        }
+
+        .config-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .col-divider {
+            width: 1px;
+            background-color: #f0f0f0;
+        }
+
+        .section-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            width: fit-content;
+        }
+
+        .tag-source {
+            background-color: var(--tag-source-bg);
+            color: var(--tag-source-text);
+        }
+
+        .tag-target {
+            background-color: var(--tag-target-bg);
+            color: var(--tag-target-text);
+        }
+
+        /* Form Controls */
+        .form-pair {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-label {
+            font-size: 14px;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .link-action {
+            font-size: 13px;
+            color: var(--primary-blue);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        select.custom-select {
+            width: 100%;
+            height: 32px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0 8px;
+            font-size: 14px;
+            color: var(--text-main);
+            background-color: #fff;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%23646a73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+        }
+
+        select.custom-select:focus {
+            border-color: var(--primary-blue);
+        }
+        
+        select:disabled {
+            background-color: #f5f6f7;
+            cursor: not-allowed;
+        }
+
+        /* Database Row (Initially Hidden) */
+        #db-row-container {
+            display: none; 
+            margin-top: 5px;
+        }
+
+        /* Advanced Settings (Initially Hidden) */
+        .advanced-section {
+            display: none;
+            padding: 16px 0;
+            border-bottom: 1px solid #f0f0f0;
+            background-color: #fcfcfd;
+            padding-left: 16px;
+            margin-top: 1px;
+        }
+
+        .advanced-header {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 14px;
+            color: var(--text-sub);
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--primary-blue);
+        }
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        /* Sync Config Section */
+        .sync-config {
+            margin-top: 24px;
+        }
+
+        .sync-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+
+        .btn {
+            height: 32px;
+            padding: 0 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-add {
+            background-color: rgba(51, 112, 255, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .btn-add:hover {
+            background-color: rgba(51, 112, 255, 0.2);
+        }
+
+        .btn-add:disabled {
+            background-color: #f2f3f5;
+            color: #bbc0c9;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 0;
+            gap: 16px;
+        }
+
+        .empty-text {
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .empty-subtext {
+            color: var(--text-sub);
+            font-size: 12px;
+        }
+
+        /* 同步配置完整结构样式 */
+        .sync-config-content {
+            display: none;
+        }
+
+        .sync-config-content.show {
+            display: block;
+        }
+
+        .sync-config-layout {
+            display: flex;
+            gap: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        /* 左侧表列表 */
+        .sync-table-sidebar {
+            width: 280px;
+            border-right: 1px solid var(--border-color);
+            background: #fafafa;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sync-table-sidebar-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            background: #fff;
+        }
+
+        .sync-table-search {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .sync-table-search input {
+            width: 100%;
+            padding: 6px 30px 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .sync-table-search .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-sub);
+            font-size: 12px;
+        }
+
+        .sync-table-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .sync-table-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-main);
+            border-radius: 4px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .sync-table-item:hover {
+            background: #f0f0f0;
+        }
+
+        .sync-table-item.active {
+            background: #e8f3ff;
+            color: var(--primary-blue);
+            font-weight: 500;
+        }
+
+        .sync-table-item i {
+            font-size: 14px;
+            color: var(--text-sub);
+        }
+
+        .sync-table-item.active i {
+            color: var(--primary-blue);
+        }
+
+        /* 右侧字段映射区域 */
+        .sync-field-mapping {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+
+        .field-mapping-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .field-mapping-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .field-mapping-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .field-mapping-toolbar select {
+            height: 28px;
+            padding: 0 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .field-mapping-toolbar .toolbar-actions {
+            display: flex;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .field-mapping-toolbar .toolbar-actions span {
+            cursor: pointer;
+        }
+
+        .field-mapping-toolbar .toolbar-actions span:hover {
+            color: var(--primary-blue);
+        }
+
+        .field-mapping-table-header {
+            display: flex;
+            background: #fafafa;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .field-mapping-source-header {
+            flex: 1;
+            display: flex;
+            padding: 8px 12px;
+            background: #f0f7ff;
+            border-right: 1px solid #fff;
+        }
+
+        .field-mapping-target-header {
+            flex: 1;
+            display: flex;
+            padding: 8px 12px;
+            background: #f6ffed;
+        }
+
+        .field-mapping-col {
+            flex: 1;
+            padding-left: 8px;
+        }
+
+        .field-mapping-col-sm {
+            width: 50px;
+            text-align: center;
+        }
+
+        .field-mapping-col-md {
+            width: 60px;
+            text-align: center;
+        }
+
+        .field-mapping-col-op {
+            width: 90px;
+            text-align: center;
+        }
+
+        .field-mapping-rows {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 418px; /* 9.5行 * 44px = 418px */
+            min-height: 418px; /* 确保最小高度，保持固定显示区域 */
+        }
+
+        .field-mapping-row {
+            display: flex;
+            height: 44px;
+            border-bottom: 1px solid #f0f0f0;
+            align-items: center;
+            font-size: 13px;
+            transition: background 0.1s;
+        }
+
+        .field-mapping-row:hover {
+            background: #f5f7fa;
+        }
+
+        .field-mapping-source {
+            flex: 1;
+            display: flex;
+            padding: 0 12px;
+            border-right: 1px solid #f0f0f0;
+            background: #fff;
+        }
+
+        .field-mapping-target {
+            flex: 1;
+            display: flex;
+            padding: 0 12px;
+            background: #fff;
+        }
+
+        .field-mapping-arrow {
+            width: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ccc;
+            font-size: 16px;
+        }
+
+        .field-mapping-input {
+            height: 24px;
+            width: 92%;
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            padding: 0 6px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .field-mapping-input:focus {
+            border-color: var(--primary-blue);
+        }
+
+        .field-mapping-checkbox {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        .field-mapping-key-icon {
+            color: #ff9800;
+            font-size: 14px;
+        }
+
+        .field-mapping-op {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .field-mapping-op-btn {
+            cursor: pointer;
+            color: var(--text-sub);
+            font-size: 14px;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .field-mapping-op-btn:hover {
+            background: #e6f7ff;
+            color: var(--primary-blue);
+        }
+
+        .field-mapping-op-btn.del:hover {
+            background: #fff1f0;
+            color: #ff4d4f;
+        }
+
+        /* 写入方式配置 */
+        .write-method-section {
+            padding: 20px 24px;
+            border-top: 1px solid var(--border-color);
+            background: #fff;
+        }
+
+        .write-method-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-main);
+        }
+
+        .write-method-row {
+            display: flex;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .write-method-label {
+            width: 100px;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .write-method-value {
+            flex: 1;
+            color: var(--text-main);
+        }
+
+        .write-method-pk-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .write-method-pk-tag {
+            display: inline-block;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 2px 8px;
+            font-size: 12px;
+        }
+
+        /* Footer */
+        .footer {
+            height: 64px;
+            background-color: #fff;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-blue);
+            color: #fff;
+            height: 32px;
+            width: 80px;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* ------------------- 弹窗样式集成 ------------------- */
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000; /* 高于 Sidebar */
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-dialog {
+            background: #fff;
+            border-radius: 4px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            height: 80vh; /* 固定高度以便内部滚动 */
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            color: var(--text-main);
+        }
+
+        .modal-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-height: 0; /* Webkit flex bug fix */
+        }
+
+        .modal-left-panel {
+            width: 400px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            background: #fafafa;
+        }
+
+        .modal-right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+
+        .panel-title {
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-search {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .panel-search input {
+            width: 100%;
+            padding: 6px 30px 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .panel-search .search-icon {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        /* 树形列表样式 */
+        .table-tree {
+            list-style: none;
+        }
+
+        .tree-category {
+            margin-bottom: 8px;
+        }
+
+        .tree-category-header {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-main);
+            user-select: none;
+        }
+
+        .tree-category-header:hover {
+            background: #f0f0f0;
+        }
+
+        .tree-category-icon {
+            width: 16px;
+            margin-right: 6px;
+            color: var(--text-secondary);
+            font-size: 10px;
+        }
+
+        .tree-category-children {
+            margin-left: 22px;
+            display: none;
+        }
+
+        .tree-category.expanded .tree-category-children {
+            display: block;
+        }
+
+        .tree-item {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-regular);
+            border-radius: 2px;
+        }
+
+        .tree-item:hover {
+            background: #f0f0f0;
+        }
+
+        .tree-checkbox {
+            width: 14px;
+            height: 14px;
+            border: 1px solid #dcdfe6;
+            border-radius: 2px;
+            margin-right: 8px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            background: #fff;
+        }
+
+        .tree-checkbox.checked {
+            background: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+
+        .tree-checkbox.checked::after {
+            content: '\2713';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 10px;
+        }
+
+        .tree-item-name {
+            flex: 1;
+        }
+
+        .tree-item-badge {
+            font-size: 11px;
+            color: var(--text-secondary);
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 2px;
+            margin-left: 8px;
+        }
+
+        /* 右侧已选区域及批量操作 */
+        .selected-table-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .batch-action-bar {
+            display: none;
+            padding: 12px 16px;
+            background: #ecf5ff;
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+        .batch-action-bar.show {
+            display: flex;
+        }
+
+        .batch-selection-info {
+            color: var(--primary-blue);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .batch-close {
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 16px;
+            padding: 2px 4px;
+        }
+
+        .batch-divider {
+            width: 1px;
+            height: 16px;
+            background: #dcdfe6;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 16px;
+            margin-left: auto;
+        }
+
+        .batch-action-btn {
+            color: var(--primary-blue);
+            cursor: pointer;
+            font-size: 13px;
+            padding: 4px 0;
+            position: relative;
+        }
+
+        .batch-action-btn:hover {
+            text-decoration: underline;
+        }
+
+        .batch-action-btn.disabled {
+            color: #c0c4cc;
+            cursor: not-allowed;
+            text-decoration: none;
+        }
+
+        .table-wrapper {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .selected-table-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .selected-table-empty i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .selected-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .selected-table thead {
+            background: #f5f7fa;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .selected-table th {
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 500;
+            color: var(--text-regular);
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .selected-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .selected-table tbody tr:hover {
+            background: var(--hover-bg);
+        }
+
+        /* 选中表中的分类行 */
+        .category-row {
+            background: #fff;
+        }
+        .category-row .category-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .category-row .category-label .expand-icon {
+            font-size: 10px;
+            color: var(--text-regular);
+            transition: transform 0.2s;
+        }
+        .category-row.expanded .category-label .expand-icon {
+            transform: rotate(90deg);
+        }
+
+        /* 子表样式 */
+        .selected-row.sub-row {
+            background: #fafafa;
+        }
+        .sub-indicator-line {
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 50%;
+            width: 1px;
+            background: #dcdfe6;
+        }
+        .sub-indicator-line::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 15px;
+            height: 1px;
+            background: #dcdfe6;
+        }
+
+        .sub-table-toggle {
+            color: var(--primary-blue);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+        }
+
+        .sub-table-toggle:hover {
+            text-decoration: underline;
+        }
+
+        .sync-start-input {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+        
+        .sync-start-input input {
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            width: 160px;
+        }
+
+        .delete-btn {
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .delete-btn:hover {
+            color: #f56c6c;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: #fff;
+        }
+
+        .btn-cancel {
+            background: #fff;
+            border: 1px solid #dcdfe6;
+            color: var(--text-regular);
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .btn-cancel:hover {
+            color: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+
+        .btn-confirm {
+            background: var(--primary-blue);
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .btn-confirm:hover {
+            background: var(--primary-hover);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <svg class="logo-icon" viewBox="0 0 32 32" fill="none">
+           <circle cx="16" cy="16" r="14" fill="#3370ff"/>
+           <path d="M10 16 L14 20 L22 12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+
+        <div class="nav-item">
+            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+            <div>运维中心</div>
+        </div>
+        
+        <div class="nav-item active">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            <div>数据管道</div>
+        </div>
+
+        <div class="nav-item">
+            <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+            <div>数据开发</div>
+        </div>
+
+        <div class="nav-item">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
+            <div>数据服务</div>
+        </div>
+
+        <div class="nav-item">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+            <div>数据管理</div>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="nav-item">
+               <svg viewBox="0 0 24 24" style="transform: rotate(180deg)"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <rect x="2" y="2" width="20" height="20" rx="4" fill="#3370ff"/>
+                    <path d="M12 7L7 12L12 17M17 12H7" stroke="white" stroke-width="2"/>
+                </svg>
+                <div style="display: flex; align-items: center; margin-left:8px;">
+                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                         <circle cx="12" cy="12" r="10" stroke="#3370ff" stroke-width="3"/>
+                     </svg>
+                     <span style="font-size: 18px; margin-left: 8px;">FineDataLink</span>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="system-select">
+                    <span style="color: #3370ff; margin-right: 6px;">⬢</span> 
+                    管理系统 
+                    <span style="font-size: 10px; margin-left: 6px;">▼</span>
+                </div>
+                <div class="icon-btn">
+                     <svg width="20" height="20" viewBox="0 0 24 24" fill="#646a73"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+                </div>
+                <div class="icon-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#646a73"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+                </div>
+                <div class="icon-btn" style="color: #1f2329; font-size: 14px; font-weight: 500;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#646a73" style="margin-right: 4px;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    用户名
+                    <span style="font-size: 10px; margin-left: 4px;">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-bar">
+            <div class="back-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                </svg>
+                返回
+            </div>
+            <div class="page-title">
+                定时管道任务
+                <svg class="edit-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="content-scroll">
+            
+            <div class="config-card">
+                <!-- Source / Target Configuration -->
+                <div class="config-split">
+                    <!-- Source Column -->
+                    <div class="config-col">
+                        <div class="section-tag tag-source">数据来源</div>
+                        
+                        <div class="form-pair">
+                            <div class="label-row">
+                                <span class="form-label">数据连接</span>
+                                <a href="#" class="link-action">测试连接</a>
+                            </div>
+                            <div class="input-group">
+                                <select class="custom-select" id="sourceType">
+                                    <option value="" disabled selected>请选择类型</option>
+                                    <option value="jikeyun">吉客云</option>
+                                </select>
+                                <select class="custom-select" id="sourceConn">
+                                    <option value="" disabled selected>请选择数据连接</option>
+                                    <option value="conn1">数据连接1</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-divider"></div>
+
+                    <!-- Target Column -->
+                    <div class="config-col">
+                        <div class="section-tag tag-target">数据去向</div>
+                        
+                        <div class="form-pair">
+                            <div class="label-row">
+                                <span class="form-label">数据连接</span>
+                                <a href="#" class="link-action">测试连接</a>
+                            </div>
+                            <div class="input-group">
+                                <select class="custom-select" id="targetType">
+                                    <option value="" disabled selected>请选择类型</option>
+                                    <option value="mysql">MySQL</option>
+                                </select>
+                                <select class="custom-select" id="targetConn">
+                                    <option value="" disabled selected>请选择数据连接</option>
+                                    <option value="conn2">数据连接2</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Database Row (Dynamic) -->
+                        <div class="form-pair" id="db-row-container">
+                            <div class="label-row">
+                                <span class="form-label">库</span>
+                            </div>
+                            <div class="input-group">
+                                <select class="custom-select" id="targetDB">
+                                    <option value="default" selected>default</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Settings (Collapsed by default) -->
+                <div class="advanced-section" id="advanced-settings">
+                    <div class="advanced-header">
+                        <span style="font-size: 10px; margin-right: 6px;">▼</span>
+                        高级设置
+                    </div>
+                    <div class="setting-item">
+                        <span>同步源表结构变化</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#999" style="margin-left: -10px; cursor: help;">
+                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                        </svg>
+                        <div class="switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sync Config -->
+                <div class="sync-config" id="syncConfigSection">
+                    <div class="sync-title">同步配置</div>
+                    <!-- 添加表按钮 (ID: addTableBtn) -->
+                    <button class="btn btn-add" id="addTableBtn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        添加表
+                    </button>
+                    
+                    <div style="height: 1px; background: #f0f0f0; margin: 16px 0;"></div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="emptyStateSync">
+                        <div style="position: relative; width: 100px; height: 80px;">
+                            <div style="position: absolute; width: 80px; height: 60px; background: #eef1f5; border-radius: 8px; top: 10px; left: 10px;"></div>
+                            <div style="position: absolute; width: 80px; height: 60px; background: #dce1e8; border-radius: 8px; top: 0; left: 0; display:flex; flex-direction:column; padding: 10px; gap: 6px;">
+                                <div style="display: flex; gap: 6px;">
+                                    <div style="width: 12px; height: 12px; background: white; border-radius: 2px;"></div>
+                                    <div style="flex: 1; height: 12px; background: white; border-radius: 2px;"></div>
+                                </div>
+                                <div style="display: flex; gap: 6px;">
+                                    <div style="width: 12px; height: 12px; background: rgba(255,255,255,0.5); border-radius: 2px;"></div>
+                                    <div style="flex: 1; height: 12px; background: rgba(255,255,255,0.5); border-radius: 2px;"></div>
+                                </div>
+                            </div>
+                            <svg style="position: absolute; right: 0px; bottom: 15px; width: 24px; height: 24px; fill: #7e8695;" viewBox="0 0 24 24"><path d="M2 22l6-4.5L2 14v8z"/></svg> 
+                        </div>
+                        <div class="empty-text">暂无内容</div>
+                        <div class="empty-subtext">请添加表</div>
+                    </div>
+
+                    <!-- 同步配置内容 -->
+                    <div class="sync-config-content" id="syncConfigContent">
+                        <div class="sync-config-layout">
+                            <!-- 左侧表列表 -->
+                            <div class="sync-table-sidebar">
+                                <div class="sync-table-sidebar-header">同步配置</div>
+                                <div class="sync-table-search">
+                                    <input type="text" placeholder="搜索表" id="syncTableSearch">
+                                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                </div>
+                                <div class="sync-table-list" id="syncTableList">
+                                    <!-- 动态生成表列表 -->
+                    </div>
+                </div>
+
+                            <!-- 右侧字段映射 -->
+                            <div class="sync-field-mapping">
+                                <div class="field-mapping-header">
+                                    <div class="field-mapping-title">字段映射</div>
+                                    <div class="field-mapping-toolbar">
+                                        <select id="mappingTypeSelect" style="height: 28px; border: 1px solid var(--border-color); border-radius: 4px; padding: 0 8px; font-size: 12px;">
+                                            <option>同名映射</option>
+                                        </select>
+                                        <div class="toolbar-actions">
+                                            <span>批量操作 <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i></span>
+                                            <span><i class="fa-solid fa-plus"></i> 手动建表</span>
+                                            <span><i class="fa-solid fa-rotate"></i> 重新获取</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 来源和目标表标签 -->
+                                <div style="display: flex; gap: 20px; padding: 8px 12px; border-bottom: 1px solid var(--border-color);">
+                                    <div style="flex: 1; height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-radius: 4px; background: #e6f7ff; font-size: 12px; font-weight: 500;">
+                                        <div>
+                                            <span id="sourceTableLabel" style="margin-right: 8px;">来源·增量表</span>
+                                            <span id="sourceTableName">仓库查询</span>
+                                        </div>
+                                        <span style="color: var(--primary-blue); cursor: pointer;">表处理</span>
+                                    </div>
+                                    <div style="flex: 1; height: 32px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-radius: 4px; background: #d9f7be; font-size: 12px; font-weight: 500;">
+                                        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                                            <span>目标</span>
+                                            <select style="height: 24px; padding: 0 4px; border: 1px solid var(--border-color); border-radius: 2px; font-size: 12px; cursor: pointer;">
+                                                <option>自动建表</option>
+                                                <option>已存在表</option>
+                                            </select>
+                                            <select style="height: 24px; padding: 0 6px; border: 1px solid var(--border-color); border-radius: 2px; font-size: 12px; cursor: pointer; flex: 1; max-width: 200px;">
+                                                <option>目标表Tabe1</option>
+                                            </select>
+                                        </div>
+                                        <span style="color: var(--text-sub); cursor: pointer;">☰</span>
+                                    </div>
+                                </div>
+
+                                <!-- 表头 -->
+                                <div style="display: flex; padding: 8px 12px; background: #fafafa; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--text-sub);">
+                                    <div style="flex: 1; display: flex; background: #f0f7ff; border-right: 1px solid #fff; padding: 8px 12px;">
+                                        <div style="width: 40px;"></div>
+                                        <div style="flex: 1; padding-left: 8px;">来源表字段</div>
+                                        <div style="flex: 1; padding-left: 8px;">类型</div>
+                                        <div style="width: 50px; text-align: center;">主键</div>
+                                        <div style="width: 60px; text-align: center;">NotNull</div>
+                                    </div>
+                                    <div style="width: 30px; display: flex; justify-content: center; align-items: center;"></div>
+                                    <div style="flex: 1; display: flex; background: #f6ffed; padding: 8px 12px;">
+                                        <div style="flex: 1; padding-left: 8px;">目标表字段</div>
+                                        <div style="flex: 1; padding-left: 8px;">类型</div>
+                                        <div style="width: 50px; text-align: center;">物理主键</div>
+                                        <div style="width: 60px; text-align: center;">NotNull</div>
+                                        <div style="flex: 0 0 80px; padding-left: 8px;">注释</div>
+                                        <div style="width: 90px; text-align: center;">操作</div>
+                                    </div>
+                                </div>
+
+                                <!-- 字段行 -->
+                                <div class="field-mapping-rows" id="fieldMappingRows">
+                                    <!-- 动态生成字段映射行 -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 写入方式配置 -->
+                        <div class="write-method-section">
+                            <div class="write-method-title">写入方式</div>
+                            <div class="write-method-row">
+                                <div class="write-method-label">写入方式</div>
+                                <div class="write-method-value">直接将数据写入目标表</div>
+                            </div>
+                            <div class="write-method-row">
+                                <div class="write-method-label">
+                                    主键映射
+                                    <i class="fa-solid fa-circle-info" style="font-size: 12px; color: var(--text-sub);"></i>
+                                </div>
+                                <div class="write-method-value">
+                                    <div class="write-method-pk-tags" id="pkMappingTags">
+                                        <!-- 动态生成主键映射标签 -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="write-method-row">
+                                <div class="write-method-label">主键冲突策略</div>
+                                <div class="write-method-value">主键相同,覆盖目标表数据</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <button class="btn btn-primary">保存</button>
+        </footer>
+
+    </div>
+
+    <!-- 添加表弹窗 HTML (插入到 body 底部) -->
+    <div class="modal-overlay" id="addTableModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title">添加表</div>
+                <button class="modal-close" id="closeModal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- 左侧：选择表 -->
+                <div class="modal-left-panel">
+                    <div class="panel-title">选择表</div>
+                    <div class="panel-search">
+                        <input type="text" placeholder="搜索库/表" id="tableSearch">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    </div>
+                    <div class="panel-content">
+                        <ul class="table-tree" id="tableTree">
+                            <!-- 基础类 -->
+                            <li class="tree-category expanded">
+                                <div class="tree-category-header">
+                                    <i class="fa-solid fa-caret-down tree-category-icon"></i>
+                                    <span>基础类</span>
+                                </div>
+                                <ul class="tree-category-children">
+                                    <li class="tree-item" data-table="仓库查询" data-type="全量表" data-category="基础类">
+                                        <div class="tree-checkbox"></div>
+                                        <span class="tree-item-name">仓库查询</span>
+                                        <span class="tree-item-badge">全量表</span>
+                                    </li>
+                                    <li class="tree-item" data-table="店铺查询" data-type="全量表" data-category="基础类">
+                                        <div class="tree-checkbox"></div>
+                                        <span class="tree-item-name">店铺查询</span>
+                                        <span class="tree-item-badge">全量表</span>
+                                    </li>
+                                    <li class="tree-item" data-table="供应商查询" data-type="增量表" data-category="基础类" data-has-sub="false">
+                                        <div class="tree-checkbox"></div>
+                                        <span class="tree-item-name">供应商查询</span>
+                                        <span class="tree-item-badge">增量表</span>
+                                    </li>
+                                    <li class="tree-item" data-table="分销商查询" data-type="增量表" data-category="基础类">
+                                        <div class="tree-checkbox"></div>
+                                        <span class="tree-item-name">分销商查询</span>
+                                        <span class="tree-item-badge">增量表</span>
+                                    </li>
+                                    <li class="tree-item" data-table="入库单查询" data-type="增量表" data-category="基础类" data-has-sub="true" data-sub-name="入库单查询-明细">
+                                        <div class="tree-checkbox"></div>
+                                        <span class="tree-item-name">入库单查询</span>
+                                        <span class="tree-item-badge">增量表</span>
+                                    </li>
+                                    <li class="tree-item" data-table="货品价目表" data-type="增量表" data-category="基础类" data-has-sub="false">
+                                        <div class="tree-checkbox"></div>
+                                        <span class="tree-item-name">货品价目表</span>
+                                        <span class="tree-item-badge">增量表</span>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!-- 入库类 -->
+                            <li class="tree-category">
+                                <div class="tree-category-header">
+                                    <i class="fa-solid fa-caret-right tree-category-icon"></i>
+                                    <span>入库类</span>
+                                </div>
+                                <ul class="tree-category-children">
+                                    <li class="tree-item" data-table="采购入库" data-type="增量表" data-category="入库类">
+                                        <div class="tree-checkbox"></div>
+                                        <span class="tree-item-name">采购入库</span>
+                                        <span class="tree-item-badge">增量表</span>
+                                    </li>
+                                    <li class="tree-item" data-table="退货入库" data-type="增量表" data-category="入库类">
+                                        <div class="tree-checkbox"></div>
+                                        <span class="tree-item-name">退货入库</span>
+                                        <span class="tree-item-badge">增量表</span>
+                                    </li>
+                                    <li class="tree-item" data-table="物流入库" data-type="增量表" data-category="入库类">
+                                        <div class="tree-checkbox"></div>
+                                        <span class="tree-item-name">物流入库</span>
+                                        <span class="tree-item-badge">增量表</span>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- 右侧：处理表 -->
+                <div class="modal-right-panel">
+                    <div class="panel-title">处理表</div>
+                    <!-- 批量操作栏 -->
+                    <div class="batch-action-bar" id="batchActionBar">
+                        <div class="batch-selection-info">
+                            <span>已选择 <span id="selectedCount">0</span>/<span id="totalCount">0</span></span>
+                            <i class="fa-solid fa-xmark batch-close" id="batchClose"></i>
+                        </div>
+                        <div class="batch-divider"></div>
+                        <div class="batch-actions">
+                            <span class="batch-action-btn" id="batchSyncStart">
+                                首次同步起点
+                            </span>
+                            <span class="batch-action-btn" id="batchSubTable">
+                                子表处理
+                            </span>
+                            <span class="batch-action-btn" id="batchDelete">批量删除</span>
+                        </div>
+                    </div>
+                    <div class="selected-table-container" id="selectedTableContainer">
+                        <!-- 空状态 -->
+                        <div class="selected-table-empty" id="emptyState">
+                            <i class="fa-solid fa-inbox"></i>
+                            <div>暂无已选表，请在左侧勾选表</div>
+                        </div>
+                        <!-- 已选表列表 -->
+                        <div class="table-wrapper" id="tableWrapper" style="display: none;">
+                            <table class="selected-table" id="selectedTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;">
+                                            <div class="tree-checkbox" id="selectAllCheckbox"></div>
+                                        </th>
+                                        <th style="min-width: 200px;">来源表</th>
+                                        <th style="min-width: 100px;">表类型 <i class="fa-solid fa-filter" style="font-size:10px; color:#909399;"></i></th>
+                                        <th style="min-width: 200px;">同步起点</th>
+                                        <th style="min-width: 150px;">子表处理</th>
+                                        <th style="width: 60px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="selectedTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btnCancel">取消</button>
+                <button class="btn-confirm" id="btnConfirm">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // ======== 主页面逻辑 ========
+            
+            const sourceType = document.getElementById('sourceType');
+            const sourceConn = document.getElementById('sourceConn');
+            const targetType = document.getElementById('targetType');
+            const targetConn = document.getElementById('targetConn');
+            const targetDB = document.getElementById('targetDB');
+            const dbRowContainer = document.getElementById('db-row-container');
+            const advancedSettings = document.getElementById('advanced-settings');
+            const addTableBtn = document.getElementById('addTableBtn');
+
+            // 检查配置完成状态
+            function checkCompletion() {
+                const sType = sourceType.value;
+                const sConn = sourceConn.value;
+                const tType = targetType.value;
+                const tConn = targetConn.value;
+                
+                if (tConn) {
+                    dbRowContainer.style.display = 'flex';
+                    if(!targetDB.value) targetDB.value = 'default';
+                } else {
+                    dbRowContainer.style.display = 'none';
+                }
+
+                if (sType && sConn && tType && tConn) {
+                    advancedSettings.style.display = 'block';
+                    addTableBtn.disabled = false; // 启用添加表按钮
+                } else {
+                    advancedSettings.style.display = 'none';
+                    addTableBtn.disabled = true;
+                }
+            }
+
+            sourceType.addEventListener('change', checkCompletion);
+            sourceConn.addEventListener('change', checkCompletion);
+            targetType.addEventListener('change', checkCompletion);
+            targetConn.addEventListener('change', checkCompletion);
+            checkCompletion();
+
+            // ======== 添加表弹窗逻辑 ========
+
+            const modal = document.getElementById('addTableModal');
+            const closeModal = document.getElementById('closeModal');
+            const btnCancel = document.getElementById('btnCancel');
+            const btnConfirm = document.getElementById('btnConfirm');
+            const tableWrapper = document.getElementById('tableWrapper');
+            const selectedTableBody = document.getElementById('selectedTableBody');
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const batchActionBar = document.getElementById('batchActionBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const totalCount = document.getElementById('totalCount');
+            const batchClose = document.getElementById('batchClose');
+            const batchSyncStart = document.getElementById('batchSyncStart');
+            const batchSubTable = document.getElementById('batchSubTable');
+            const batchDelete = document.getElementById('batchDelete');
+            const emptyState = document.getElementById('emptyState');
+
+            // 存储已选表的数据
+            let selectedTables = {};
+            // 存储批量选中的表
+            let batchSelectedTables = new Set();
+
+            // 打开弹窗 (绑定主页面按钮)
+            addTableBtn.addEventListener('click', () => {
+                if (!addTableBtn.disabled) {
+                    modal.classList.add('show');
+                }
+            });
+
+            // 清空、关闭逻辑
+            function clearModalData() {
+                selectedTables = {};
+                batchSelectedTables.clear();
+                
+                document.querySelectorAll('.tree-item .tree-checkbox').forEach(checkbox => {
+                    checkbox.classList.remove('checked');
+                });
+                
+                emptyState.style.display = 'flex';
+                tableWrapper.style.display = 'none';
+                batchActionBar.classList.remove('show');
+                selectAllCheckbox.classList.remove('checked');
+                selectedTableBody.innerHTML = '';
+                
+                const tableSearch = document.getElementById('tableSearch');
+                if (tableSearch) {
+                    tableSearch.value = '';
+                    document.querySelectorAll('.tree-item').forEach(item => {
+                        item.style.display = 'flex';
+                    });
+                }
+            }
+
+            function closeModalFunc() {
+                modal.classList.remove('show');
+                // 可选择是否在这里清空数据，根据需求保留或重置
+                // check: 如果希望下次打开还保留选中状态，则不调用 clearModalData
+            }
+
+            // 存储已添加的表数据
+            let addedTables = {};
+
+            // 生成字段数据（模拟）
+            function generateFields(tableName) {
+                const fieldNames = {
+                    '仓库查询': ['仓库ID', '仓库名称', '仓库地址', '创建时间'],
+                    '供应商查询': ['供应商ID', '供应商名称', '联系人', '联系电话', '地址'],
+                    '入库单查询': ['采购单号', '采购日期', '设备名称', '设备型号', '数量', '金额'],
+                    '货品价目表': ['货品ID', '货品名称', '价格', '单位', '更新时间'],
+                    '店铺查询': ['店铺ID', '店铺名称', '店铺地址', '负责人'],
+                    '分销商查询': ['分销商ID', '分销商名称', '联系人', '电话'],
+                    '采购入库': ['入库单号', '采购日期', '供应商', '商品', '数量'],
+                    '退货入库': ['退货单号', '退货日期', '客户', '商品', '数量'],
+                    '物流入库': ['物流单号', '入库日期', '商品', '数量', '仓库']
+                };
+
+                const fieldTypes = {
+                    '仓库ID': 'number', '供应商ID': 'number', '入库单号': 'number', '货品ID': 'number',
+                    '店铺ID': 'number', '分销商ID': 'number', '采购单号': 'number', '退货单号': 'number',
+                    '物流单号': 'number', '数量': 'number', '金额': 'number', '价格': 'number',
+                    '创建时间': 'date', '采购日期': 'date', '更新时间': 'date', '退货日期': 'date',
+                    '入库日期': 'date'
+                };
+
+                const names = fieldNames[tableName] || ['字段1', '字段2', '字段3'];
+                return names.map((name, index) => ({
+                    name: name,
+                    type: fieldTypes[name] || 'string',
+                    isKey: index === 0,
+                    notNull: index < 2,
+                    targetName: name,
+                    targetType: fieldTypes[name] || 'string'
+                }));
+            }
+
+            function confirmModalFunc() {
+                const tableCount = Object.keys(selectedTables).length;
+                if (tableCount === 0) {
+                    alert('请至少选择一张表');
+                    return;
+                }
+
+                // 将选中的表添加到已添加列表
+                Object.keys(selectedTables).forEach(tableName => {
+                    if (!addedTables[tableName]) {
+                        addedTables[tableName] = {
+                            ...selectedTables[tableName],
+                            fields: generateFields(tableName)
+                        };
+                    }
+                });
+
+                // 隐藏空状态，显示同步配置内容
+                const emptyState = document.getElementById('emptyStateSync');
+                const syncConfigContent = document.getElementById('syncConfigContent');
+                emptyState.style.display = 'none';
+                syncConfigContent.classList.add('show');
+
+                // 更新表列表
+                updateSyncTableList();
+
+                // 默认选中第一个表
+                const firstTableName = Object.keys(addedTables)[0];
+                if (firstTableName) {
+                    selectSyncTable(firstTableName);
+                }
+
+                // 每次添加表后自动滚动到同步配置顶部
+                setTimeout(() => {
+                    const syncConfigSection = document.getElementById('syncConfigSection');
+                    syncConfigSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+
+                // 关闭弹窗
+                closeModalFunc();
+            }
+
+            // 更新同步配置中的表列表
+            function updateSyncTableList() {
+                const syncTableList = document.getElementById('syncTableList');
+                const tableNames = Object.keys(addedTables);
+                
+                if (tableNames.length === 0) {
+                    syncTableList.innerHTML = '';
+                    return;
+                }
+
+                let html = '';
+                tableNames.forEach(tableName => {
+                    const table = addedTables[tableName];
+                    html += `
+                        <div class="sync-table-item" data-table="${tableName}">
+                            <i class="fa-solid fa-table"></i>
+                            <span>${tableName}</span>
+                        </div>
+                    `;
+                });
+
+                syncTableList.innerHTML = html;
+
+                // 绑定表项点击事件
+                document.querySelectorAll('.sync-table-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const tableName = this.dataset.table;
+                        selectSyncTable(tableName);
+                    });
+                });
+            }
+
+            // 选中表并显示字段映射
+            function selectSyncTable(tableName) {
+                // 更新表列表选中状态
+                document.querySelectorAll('.sync-table-item').forEach(item => {
+                    if (item.dataset.table === tableName) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+
+                const table = addedTables[tableName];
+                if (!table) return;
+
+                // 更新来源表标签
+                const sourceTableLabel = document.getElementById('sourceTableLabel');
+                const sourceTableName = document.getElementById('sourceTableName');
+                if (sourceTableLabel && sourceTableName) {
+                    sourceTableLabel.textContent = `来源·${table.type}`;
+                    sourceTableName.textContent = tableName;
+                }
+
+                // 更新字段映射区域
+                const fieldMappingRows = document.getElementById('fieldMappingRows');
+                const pkMappingTags = document.getElementById('pkMappingTags');
+
+                // 生成字段映射行
+                let rowsHtml = '';
+                const primaryKeys = [];
+                
+                table.fields.forEach((field, index) => {
+                    if (field.isKey) {
+                        primaryKeys.push(field.name);
+                    }
+
+                    rowsHtml += `
+                        <div class="field-mapping-row">
+                            <div class="field-mapping-source">
+                                <div class="field-mapping-col" style="width: 40px;">
+                                    <input type="checkbox" class="field-mapping-checkbox">
+                                </div>
+                                <div class="field-mapping-col">${field.name}</div>
+                                <div class="field-mapping-col" style="color: var(--text-sub);">${field.type}</div>
+                                <div class="field-mapping-col-sm">
+                                    ${field.isKey ? '<i class="fa-solid fa-key field-mapping-key-icon"></i>' : ''}
+                                </div>
+                                <div class="field-mapping-col-md">
+                                    <input type="checkbox" ${field.notNull ? 'checked' : ''} disabled>
+                                </div>
+                            </div>
+                            <div class="field-mapping-arrow">➜</div>
+                            <div class="field-mapping-target">
+                                <div class="field-mapping-col">
+                                    <select class="field-mapping-input" style="width: 100%;">
+                                        <option value="${field.targetName}" selected>${field.targetName}</option>
+                                    </select>
+                                </div>
+                                <div class="field-mapping-col">
+                                    <input type="text" class="field-mapping-input" value="${field.targetType}">
+                                </div>
+                                <div class="field-mapping-col-sm">
+                                    ${field.isKey ? '<i class="fa-solid fa-key field-mapping-key-icon"></i>' : ''}
+                                </div>
+                                <div class="field-mapping-col-md">
+                                    <input type="checkbox" ${field.notNull ? 'checked' : ''}>
+                                </div>
+                                <div class="field-mapping-col" style="flex: 0 0 80px; color: var(--text-sub);">--</div>
+                                <div class="field-mapping-col-op">
+                                    <i class="fa-regular fa-trash-can field-mapping-op-btn del"></i>
+                                    <i class="fa-solid fa-ellipsis-vertical field-mapping-op-btn"></i>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                fieldMappingRows.innerHTML = rowsHtml;
+
+                // 生成主键映射标签
+                let pkTagsHtml = '';
+                primaryKeys.forEach(pk => {
+                    pkTagsHtml += `<span class="write-method-pk-tag">${pk}=${pk}</span>`;
+                });
+                pkMappingTags.innerHTML = pkTagsHtml || '<span style="color: var(--text-sub);">暂无</span>';
+            }
+
+            // 同步配置表搜索
+            const syncTableSearch = document.getElementById('syncTableSearch');
+            if (syncTableSearch) {
+                syncTableSearch.addEventListener('input', function() {
+                    const searchText = this.value.toLowerCase().trim();
+                    document.querySelectorAll('.sync-table-item').forEach(item => {
+                        const tableName = item.dataset.table.toLowerCase();
+                        if (searchText === '' || tableName.includes(searchText)) {
+                            item.style.display = 'flex';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            }
+
+            closeModal.addEventListener('click', closeModalFunc);
+            btnCancel.addEventListener('click', closeModalFunc);
+            btnConfirm.addEventListener('click', confirmModalFunc);
+
+            // 点击遮罩层关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModalFunc();
+                }
+            });
+
+            // 左侧树交互：分类展开/折叠
+            document.querySelectorAll('.tree-category-header').forEach(header => {
+                header.addEventListener('click', function() {
+                    const category = this.parentElement;
+                    category.classList.toggle('expanded');
+                    const icon = this.querySelector('.tree-category-icon');
+                    if (category.classList.contains('expanded')) {
+                        icon.classList.remove('fa-caret-right');
+                        icon.classList.add('fa-caret-down');
+                    } else {
+                        icon.classList.remove('fa-caret-down');
+                        icon.classList.add('fa-caret-right');
+                    }
+                });
+            });
+
+            // 左侧树交互：勾选表
+            document.querySelectorAll('.tree-item').forEach(item => {
+                const checkbox = item.querySelector('.tree-checkbox');
+                checkbox.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const isChecked = this.classList.toggle('checked');
+                    const tableName = item.dataset.table;
+                    const tableType = item.dataset.type;
+                    const category = item.dataset.category;
+                    const hasSub = item.dataset.hasSub === 'true';
+                    const subName = item.dataset.subName || tableName;
+
+                    if (isChecked) {
+                        selectedTables[tableName] = {
+                            name: tableName,
+                            type: tableType,
+                            category: category,
+                            hasSub: hasSub,
+                            subName: subName,
+                            subTableMode: hasSub ? 'sub' : null,
+                            syncStart: tableType === '全量表' ? '全量表,无需配置' : '2023-05-23 12:23:20'
+                        };
+                    } else {
+                        delete selectedTables[tableName];
+                        if(batchSelectedTables.has(tableName)){
+                            batchSelectedTables.delete(tableName);
+                        }
+                    }
+                    updateSelectedTableDisplay();
+                    updateBatchActionBar();
+                });
+            });
+
+            // 更新右侧显示
+            function updateSelectedTableDisplay() {
+                const tableKeys = Object.keys(selectedTables);
+                
+                if (tableKeys.length === 0) {
+                    emptyState.style.display = 'flex';
+                    tableWrapper.style.display = 'none';
+                    batchActionBar.classList.remove('show');
+                    selectAllCheckbox.classList.remove('checked');
+                    batchSelectedTables.clear();
+                } else {
+                    emptyState.style.display = 'none';
+                    tableWrapper.style.display = 'block';
+                    
+                    const groupedTables = {};
+                    tableKeys.forEach(key => {
+                        const table = selectedTables[key];
+                        if (!groupedTables[table.category]) {
+                            groupedTables[table.category] = [];
+                        }
+                        groupedTables[table.category].push(table);
+                    });
+
+                    let html = '';
+                    Object.keys(groupedTables).forEach(category => {
+                        const categoryId = 'category-' + category.replace(/\s+/g, '-');
+                        const tables = groupedTables[category];
+                        
+                        html += `
+                            <tr class="category-row expanded" id="${categoryId}" data-category="${category}">
+                                <td style="width: 40px;"></td>
+                                <td colspan="5" class="category-label">
+                                    <i class="fa-solid fa-caret-down expand-icon"></i>
+                                    分类:${category}
+                                </td>
+                            </tr>
+                        `;
+                        
+                        tables.forEach((table) => {
+                            const rowId = 'row-' + table.name.replace(/\s+/g, '-');
+                            const subTableMode = table.subTableMode || (table.hasSub ? 'sub' : 'field');
+                            const isBatchSelected = batchSelectedTables.has(table.name);
+                            
+                            html += `
+                                <tr class="selected-row" id="${rowId}" data-table="${table.name}">
+                                    <td>
+                                        <div class="tree-checkbox row-checkbox ${isBatchSelected ? 'checked' : ''}" data-table="${table.name}"></div>
+                                    </td>
+                                    <td>
+                                        <i class="fa-solid fa-table" style="color: var(--primary-blue); margin-right: 6px;"></i>
+                                        ${table.name}
+                                    </td>
+                                    <td>${table.type}</td>
+                                    <td>
+                                        ${table.type === '全量表' 
+                                            ? '全量表,无需配置' 
+                                            : `<div class="sync-start-input">
+                                                <input type="text" value="${table.syncStart}" readonly>
+                                                <i class="fa-regular fa-calendar"></i>
+                                            </div>`
+                                        }
+                                    </td>
+                                    <td>
+                                        ${table.hasSub 
+                                            ? `<span class="sub-table-toggle" data-table="${table.name}">
+                                                ${subTableMode === 'sub' ? '以子表输出' : '以字段输出'}
+                                                <i class="fa-solid fa-rotate"></i>
+                                            </span>`
+                                            : '无子表,无需处理'
+                                        }
+                                    </td>
+                                    <td>
+                                        <i class="fa-regular fa-trash-can delete-btn" data-table="${table.name}"></i>
+                                    </td>
+                                </tr>
+                            `;
+                            
+                            if (table.hasSub && subTableMode === 'sub') {
+                                html += `
+                                    <tr class="selected-row sub-row" id="sub-${rowId}">
+                                        <td style="position: relative;">
+                                            <span class="sub-indicator-line"></span>
+                                        </td>
+                                        <td style="padding-left: 20px;">
+                                            ${table.subName || table.name}
+                                        </td>
+                                        <td>增量子表</td>
+                                        <td>跟随主表</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                `;
+                            }
+                        });
+                    });
+
+                    selectedTableBody.innerHTML = html;
+                    bindDynamicEvents();
+                    updateSelectAllCheckbox();
+                }
+            }
+
+            // 更新批量操作栏
+            function updateBatchActionBar() {
+                const selectedCountNum = batchSelectedTables.size;
+                const totalCountNum = Object.keys(selectedTables).length;
+                
+                if (selectedCountNum > 0) {
+                    batchActionBar.classList.add('show');
+                    selectedCount.textContent = selectedCountNum;
+                    totalCount.textContent = totalCountNum;
+                    
+                    let hasIncrementalTable = false;
+                    let hasSubTable = false;
+                    
+                    batchSelectedTables.forEach(tableName => {
+                        const table = selectedTables[tableName];
+                        if (table) {
+                            if (table.type === '增量表') hasIncrementalTable = true;
+                            if (table.hasSub) hasSubTable = true;
+                        }
+                    });
+                    
+                    if (hasIncrementalTable) batchSyncStart.classList.remove('disabled');
+                    else batchSyncStart.classList.add('disabled');
+                    
+                    if (hasSubTable) batchSubTable.classList.remove('disabled');
+                    else batchSubTable.classList.add('disabled');
+                } else {
+                    batchActionBar.classList.remove('show');
+                }
+            }
+
+            // 绑定动态生成的事件
+            function bindDynamicEvents() {
+                // 分类折叠
+                document.querySelectorAll('.category-label').forEach(label => {
+                    label.addEventListener('click', function() {
+                        const categoryRow = this.closest('.category-row');
+                        const isExpanded = categoryRow.classList.toggle('expanded');
+                        
+                        let currentRow = categoryRow.nextElementSibling;
+                        while (currentRow) {
+                            if (currentRow.classList.contains('category-row')) break;
+
+                            if (!currentRow.classList.contains('sub-row')) {
+                                if (isExpanded) {
+                                    currentRow.style.display = '';
+                                    const subRow = document.getElementById('sub-' + currentRow.id);
+                                    if (subRow) subRow.style.display = '';
+                                } else {
+                                    currentRow.style.display = 'none';
+                                    const subRow = document.getElementById('sub-' + currentRow.id);
+                                    if (subRow) subRow.style.display = 'none';
+                                }
+                            }
+                            currentRow = currentRow.nextElementSibling;
+                        }
+                    });
+                });
+
+                // 子表切换
+                document.querySelectorAll('.sub-table-toggle').forEach(toggle => {
+                    toggle.addEventListener('click', function() {
+                        const tableName = this.dataset.table;
+                        const table = selectedTables[tableName];
+                        if (table) {
+                            table.subTableMode = table.subTableMode === 'sub' ? 'field' : 'sub';
+                            updateSelectedTableDisplay();
+                        }
+                    });
+                });
+
+                // 删除
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const tableName = this.dataset.table;
+                        delete selectedTables[tableName];
+                        batchSelectedTables.delete(tableName);
+                        
+                        document.querySelectorAll('.tree-item').forEach(item => {
+                            if (item.dataset.table === tableName) {
+                                item.querySelector('.tree-checkbox').classList.remove('checked');
+                            }
+                        });
+                        
+                        updateSelectedTableDisplay();
+                        updateBatchActionBar();
+                    });
+                });
+
+                // 批量勾选
+                document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const tableName = this.dataset.table;
+                        const isChecked = this.classList.toggle('checked');
+                        
+                        if (isChecked) {
+                            batchSelectedTables.add(tableName);
+                        } else {
+                            batchSelectedTables.delete(tableName);
+                        }
+                        
+                        updateBatchActionBar();
+                        updateSelectAllCheckbox();
+                    });
+                });
+            }
+            
+            function updateSelectAllCheckbox() {
+                const allRows = selectedTableBody.querySelectorAll('.selected-row:not(.category-row):not(.sub-row)');
+                const checkedRows = Array.from(allRows).filter(row => row.querySelector('.row-checkbox').classList.contains('checked'));
+
+                if (allRows.length > 0 && allRows.length === checkedRows.length) {
+                    selectAllCheckbox.classList.add('checked');
+                } else {
+                    selectAllCheckbox.classList.remove('checked');
+                }
+            }
+
+            selectAllCheckbox.addEventListener('click', function() {
+                const isChecked = this.classList.toggle('checked');
+                const allCheckboxes = selectedTableBody.querySelectorAll('.row-checkbox');
+                
+                allCheckboxes.forEach(cb => {
+                    const tableName = cb.dataset.table;
+                    if (isChecked) {
+                        cb.classList.add('checked');
+                        batchSelectedTables.add(tableName);
+                    } else {
+                        cb.classList.remove('checked');
+                        batchSelectedTables.delete(tableName);
+                    }
+                });
+                updateBatchActionBar();
+            });
+
+            batchClose.addEventListener('click', function() {
+                batchSelectedTables.clear();
+                selectedTableBody.querySelectorAll('.row-checkbox').forEach(cb => {
+                    cb.classList.remove('checked');
+                });
+                selectAllCheckbox.classList.remove('checked');
+                updateBatchActionBar();
+            });
+
+            // 批量删除
+            batchDelete.addEventListener('click', function() {
+                if (batchSelectedTables.size === 0) return;
+                
+                if (confirm(`确定要删除选中的 ${batchSelectedTables.size} 张表吗？`)) {
+                    batchSelectedTables.forEach(tableName => {
+                        delete selectedTables[tableName];
+                        document.querySelectorAll('.tree-item').forEach(item => {
+                            if (item.dataset.table === tableName) {
+                                item.querySelector('.tree-checkbox').classList.remove('checked');
+                            }
+                        });
+                    });
+                    batchSelectedTables.clear();
+                    updateSelectedTableDisplay();
+                }
+            });
+
+            // 搜索功能
+            const tableSearch = document.getElementById('tableSearch');
+            tableSearch.addEventListener('input', function() {
+                const searchText = this.value.toLowerCase().trim();
+                
+                document.querySelectorAll('.tree-item').forEach(item => {
+                    const tableName = item.dataset.table.toLowerCase();
+                    if (searchText === '' || tableName.includes(searchText)) {
+                        item.style.display = 'flex';
+                        let category = item.closest('.tree-category');
+                        if (category) {
+                            category.classList.add('expanded');
+                            category.querySelector('.tree-category-icon').classList.remove('fa-caret-right');
+                            category.querySelector('.tree-category-icon').classList.add('fa-caret-down');
+                        }
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
