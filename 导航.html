@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页面导航 - FDL 设计素材</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: "📁";
+            margin-right: 10px;
+            font-size: 28px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+            background: #fff;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-title::before {
+            content: "🔗";
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+        .card-path {
+            font-size: 13px;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .footer {
+            text-align: center;
+            color: #fff;
+            margin-top: 50px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 32px;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 FDL 设计素材导航</h1>
+            <p>快速访问所有页面</p>
+        </div>
+
+        <!-- 主页 -->
+        <div class="section">
+            <div class="section-title">🏠 主页</div>
+            <div class="grid">
+                <a href="index.html" class="card">
+                    <div class="card-title">字段映射批量操作</div>
+                    <div class="card-path">index.html</div>
+                </a>
+                <a href="定时管道.html" class="card">
+                    <div class="card-title">定时管道</div>
+                    <div class="card-path">定时管道.html</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 定时管道优化 -->
+        <div class="section">
+            <div class="section-title">⏰ 定时管道优化</div>
+            <div class="grid">
+                <a href="定时管道优化/字段映射批量操作.html" class="card">
+                    <div class="card-title">字段映射批量操作</div>
+                    <div class="card-path">定时管道优化/字段映射批量操作.html</div>
+                </a>
+                <a href="定时管道优化/定时管道-新建页.html" class="card">
+                    <div class="card-title">定时管道-新建页</div>
+                    <div class="card-path">定时管道优化/定时管道-新建页.html</div>
+                </a>
+                <a href="定时管道优化/新建页添加表弹窗.html" class="card">
+                    <div class="card-title">新建页添加表弹窗</div>
+                    <div class="card-path">定时管道优化/新建页添加表弹窗.html</div>
+                </a>
+                <a href="定时管道优化/字段映射v2.html" class="card">
+                    <div class="card-title">字段映射 v2</div>
+                    <div class="card-path">定时管道优化/字段映射v2.html</div>
+                </a>
+                <a href="定时管道优化/字段映射v4.html" class="card">
+                    <div class="card-title">字段映射 v4</div>
+                    <div class="card-path">定时管道优化/字段映射v4.html</div>
+                </a>
+                <a href="定时管道优化/字段映射v5.html" class="card">
+                    <div class="card-title">字段映射 v5</div>
+                    <div class="card-path">定时管道优化/字段映射v5.html</div>
+                </a>
+                <a href="定时管道优化/字段映射v6.html" class="card">
+                    <div class="card-title">字段映射 v6</div>
+                    <div class="card-path">定时管道优化/字段映射v6.html</div>
+                </a>
+                <a href="定时管道优化/定时管道v1.html" class="card">
+                    <div class="card-title">定时管道 v1</div>
+                    <div class="card-path">定时管道优化/定时管道v1.html</div>
+                </a>
+                <a href="定时管道优化/定时管道v2.html" class="card">
+                    <div class="card-title">定时管道 v2</div>
+                    <div class="card-path">定时管道优化/定时管道v2.html</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 实时管道相关优化 -->
+        <div class="section">
+            <div class="section-title">⚡ 实时管道相关优化</div>
+            <div class="grid">
+                <a href="实时管道相关优化/数据一致性.html" class="card">
+                    <div class="card-title">数据一致性</div>
+                    <div class="card-path">实时管道相关优化/数据一致性.html</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 检测任务相关优化 -->
+        <div class="section">
+            <div class="section-title">🔍 检测任务相关优化</div>
+            <div class="grid">
+                <a href="检测任务相关优化 /检测对象展示方案比对.html" class="card">
+                    <div class="card-title">检测对象展示方案比对</div>
+                    <div class="card-path">检测任务相关优化 /检测对象展示方案比对.html</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 FDL 设计素材 | GitHub Pages</p>
+        </div>
+    </div>
+</body>
+</html>
+
+
