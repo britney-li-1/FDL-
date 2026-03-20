@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加表弹窗（带步骤条）</title>
+    <!-- 引入 FontAwesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- 基础变量 --- */
+        :root {
+            --primary-blue: #3c78f8;
+            --primary-blue-hover: #2960d7;
+            --text-main: #303133;
+            --text-regular: #606266;
+            --text-secondary: #909399;
+            --border-color: #ebeef5;
+            --bg-body: #f5f7fa;
+            --hover-bg: #f5f7fa;
+            --disabled-bg: #f5f7fa;
+            --disabled-text: #c0c4cc;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* 触发按钮 */
+        .trigger-btn {
+            padding: 10px 20px; background: var(--primary-blue); color: white;
+            border: none; border-radius: 4px; cursor: pointer; font-size: 14px;
+        }
+
+        /* --- 弹窗容器 --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5); z-index: 1000;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+
+        .modal-dialog {
+            background: #fff; border-radius: 4px; width: 90%; max-width: 1200px;
+            height: 85vh; display: flex; flex-direction: column;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            padding: 16px 20px; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+        }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--text-main); }
+        .modal-close {
+            background: none; border: none; font-size: 18px; color: var(--text-secondary);
+            cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+        }
+        .modal-close:hover { color: var(--text-main); }
+
+        /* --- 步骤条样式 (新建) --- */
+        .steps-container {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: #fff;
+            flex-shrink: 0;
+        }
+        .steps-wrapper {
+            display: flex;
+            align-items: center;
+            max-width: 400px;
+        }
+        .step-item {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-secondary);
+            position: relative;
+        }
+        .step-item.active {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+        .step-number {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #dcdfe6; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; margin-right: 8px;
+        }
+        .step-item.active .step-number {
+            background: var(--primary-blue);
+        }
+        .step-divider {
+            flex: 1; height: 1px; background: #dcdfe6;
+            margin: 0 12px; width: 40px;
+        }
+
+        /* --- 内容区域容器 --- */
+        .modal-content-wrapper {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            position: relative;
+        }
+        
+        .step-view {
+            width: 100%;
+            height: 100%;
+            display: none; /* 默认隐藏 */
+            flex-direction: row;
+        }
+        .step-view.active {
+            display: flex;
+        }
+
+        /* --- STEP 1 样式复用与调整 --- */
+        .modal-left-panel {
+            width: 280px; /* 稍微调窄 */
+            border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column; background: #fafafa;
+        }
+        .modal-right-panel {
+            flex: 1; display: flex; flex-direction: column; background: #fff;
+        }
+
+        /* 复用原有的搜索框、列表样式 */
+        .panel-title {
+            padding: 12px 16px; font-size: 14px; font-weight: 500; color: var(--text-main);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .panel-search {
+            padding: 10px 16px; border-bottom: 1px solid var(--border-color); position: relative;
+        }
+        .panel-search input {
+            width: 100%; padding: 6px 30px 6px 10px; border: 1px solid var(--border-color);
+            border-radius: 4px; font-size: 12px; outline: none;
+        }
+        .panel-search .search-icon {
+            position: absolute; right: 24px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);
+        }
+        .panel-content { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+        /* 树形列表通用 */
+        .table-tree { list-style: none; }
+        .tree-category-header {
+            display: flex; align-items: center; padding: 8px 16px; cursor: pointer;
+            font-size: 13px; color: var(--text-main); user-select: none;
+        }
+        .tree-category-header:hover { background: #f0f0f0; }
+        .tree-category-icon { width: 16px; color: var(--text-secondary); margin-right: 4px; font-size: 10px; }
+        .tree-category-children { display: none; }
+        .tree-category.expanded .tree-category-children { display: block; }
+
+        .tree-item {
+            display: flex; align-items: center; padding: 6px 16px 6px 36px;
+            cursor: pointer; font-size: 13px; color: var(--text-regular);
+        }
+        .tree-item:hover { background: #f0f0f0; }
+        .tree-checkbox {
+            width: 14px; height: 14px; border: 1px solid #dcdfe6; border-radius: 2px;
+            margin-right: 8px; background: #fff; position: relative; flex-shrink: 0;
+        }
+        .tree-checkbox.checked { background: var(--primary-blue); border-color: var(--primary-blue); }
+        .tree-checkbox.checked::after {
+            content: '\2713'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); color: white; font-size: 10px;
+        }
+        .tree-item-badge {
+            font-size: 11px; color: var(--text-secondary); background: #eee;
+            padding: 1px 4px; border-radius: 2px; margin-left: auto;
+        }
+
+        /* Step 1 右侧表格样式 */
+        .selected-table-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .selected-table-empty {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: var(--text-secondary); font-size: 13px;
+        }
+        .selected-table-empty i { font-size: 36px; margin-bottom: 12px; opacity: 0.3; }
+        
+        .table-wrapper { flex: 1; overflow: auto; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+        .data-table th {
+            text-align: left; padding: 10px 12px; background: #f5f7fa; color: var(--text-regular);
+            border-bottom: 1px solid var(--border-color); font-weight: 500; position: sticky; top: 0; z-index: 2;
+        }
+        .data-table td {
+            padding: 10px 12px; border-bottom: 1px solid var(--border-color); color: var(--text-main);
+        }
+        .data-table tr:hover { background: var(--hover-bg); }
+        
+        /* 批量操作条 */
+        .batch-action-bar {
+            display: none; align-items: center; background: #ecf5ff; padding: 10px 16px;
+            border-bottom: 1px solid #d9ecff; font-size: 13px;
+        }
+        .batch-action-bar.show { display: flex; }
+        .batch-info { color: var(--primary-blue); margin-right: 20px; font-weight: 500; }
+        .batch-close { cursor: pointer; margin-left: 8px; opacity: 0.7; }
+        .batch-actions { margin-left: auto; display: flex; gap: 16px; }
+        .action-link { color: var(--primary-blue); cursor: pointer; }
+        .action-link:hover { text-decoration: underline; }
+
+        /* --- STEP 2 专属样式 --- */
+        .step2-left {
+            width: 260px; border-right: 1px solid var(--border-color);
+            background: #fff; display: flex; flex-direction: column;
+        }
+        
+        /* Step 2 左侧选中的表列表项 */
+        .step2-list-item {
+            padding: 8px 12px 8px 30px;
+            font-size: 13px; color: var(--text-regular); cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between;
+            position: relative;
+        }
+        .step2-list-item:hover { background-color: #f5f7fa; }
+        .step2-list-item.active {
+            background-color: #ecf5ff; color: var(--primary-blue);
+            border-right: 2px solid var(--primary-blue);
+        }
+        .step2-list-group-title {
+            padding: 8px 12px; font-size: 12px; font-weight: 600;
+            color: var(--text-main); background: #fafafa;
+        }
+        
+        /* Step 2 左侧删除操作 (模拟 "更多" 图标) */
+        .item-action-icon {
+            opacity: 0; color: var(--text-secondary); padding: 2px;
+            border-radius: 4px; transition: all 0.2s;
+        }
+        .step2-list-item:hover .item-action-icon { opacity: 1; }
+        .item-action-icon:hover { background: #e6e6e6; color: var(--text-main); }
+        
+        /* 自定义下拉菜单模拟 (Pop confirm) */
+        .pop-confirm {
+            position: absolute; right: 10px; top: 100%;
+            background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+            border-radius: 4px; padding: 10px; z-index: 100;
+            width: 180px; display: none; text-align: left;
+        }
+        .pop-confirm.show { display: block; }
+        .pop-confirm p { font-size: 12px; margin-bottom: 10px; color: #333; }
+        .pop-btn-group { display: flex; justify-content: flex-end; gap: 8px; }
+        .pop-btn {
+            font-size: 12px; padding: 4px 10px; border-radius: 3px; cursor: pointer;
+        }
+        .pop-btn-cancel { border: 1px solid #dcdfe6; background: #fff; }
+        .pop-btn-ok { background: #f56c6c; color: white; border: none; }
+
+        /* Step 2 右侧内容 */
+        .step2-right { flex: 1; background: #fff; display: flex; flex-direction: column; }
+        .mapping-header {
+            padding: 16px 20px; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .mapping-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .mapping-body { flex: 1; padding: 20px; overflow-y: auto; background: #fafafa; }
+        
+        /* 模拟字段映射卡片 */
+        .mapping-card {
+            background: #fff; border: 1px solid #ebeef5; border-radius: 4px;
+            margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .mapping-card-header {
+             padding: 12px 16px; background: #f9fafc; border-bottom: 1px solid #ebeef5;
+             display: flex; justify-content: space-between; align-items: center;
+        }
+        .source-tag {
+            background: #ecf5ff; color: #409eff; border: 1px solid #d9ecff;
+            font-size: 12px; padding: 2px 6px; border-radius: 2px; margin-right: 6px;
+        }
+        .arrow-divider { margin: 0 10px; color: #c0c4cc; }
+
+        .mock-mapping-row {
+            display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #ebeef5;
+        }
+        .mock-field {
+            flex: 1; height: 32px; border: 1px solid #dcdfe6; border-radius: 3px;
+            display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: #606266;
+            background: #f5f7fa;
+        }
+        .mock-field.target { background: #fff; }
+        .mock-icon { width: 40px; text-align: center; color: #909399; }
+        
+        /* Step 2 空状态 */
+        .step2-empty {
+            height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: var(--text-secondary);
+        }
+        .step2-empty i { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+        /* --- 底部按钮 --- */
+        .modal-footer {
+            padding: 16px 20px; border-top: 1px solid var(--border-color);
+            display: flex; justify-content: flex-end; gap: 12px; background: #fff; flex-shrink: 0;
+        }
+        .btn {
+            padding: 8px 20px; border-radius: 4px; font-size: 14px; cursor: pointer;
+        }
+        .btn-default { background: #fff; border: 1px solid #dcdfe6; color: var(--text-regular); }
+        .btn-default:hover { color: var(--primary-blue); border-color: var(--primary-blue); }
+        .btn-primary { background: var(--primary-blue); border: 1px solid var(--primary-blue); color: #fff; }
+        .btn-primary:hover { background: var(--primary-blue-hover); }
+        .btn-primary:disabled { background: #a0cfff; border-color: #a0cfff; cursor: not-allowed; }
+
+        /* 动画类 */
+        .rotate-icon { transition: transform 0.2s; }
+        .expanded .rotate-icon { transform: rotate(90deg); }
+    </style>
+</head>
+<body>
+
+    <!-- 触发按钮 -->
+    <button class="trigger-btn" id="openBtn">
+        <i class="fa-solid fa-plus-circle"></i> 新建表任务
+    </button>
+
+    <!-- 弹窗结构 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-dialog">
+            <!-- 头部 -->
+            <div class="modal-header">
+                <div class="modal-title">添加表</div>
+                <button class="modal-close" id="closeBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- 步骤条 -->
+            <div class="steps-container">
+                <div class="steps-wrapper">
+                    <div class="step-item active" id="stepIndicator1">
+                        <div class="step-number">1</div>
+                        <span>选择来源表</span>
+                    </div>
+                    <div class="step-divider"></div>
+                    <div class="step-item" id="stepIndicator2">
+                        <div class="step-number">2</div>
+                        <span>字段映射与写入</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 内容区容器 -->
+            <div class="modal-content-wrapper">
+                
+                <!-- STEP 1 VIEW -->
+                <div class="step-view active" id="step1View">
+                    <!-- 左侧: 表树 -->
+                    <div class="modal-left-panel">
+                        <div class="panel-search">
+                            <input type="text" placeholder="搜索库/表" id="tableSearchInput">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        </div>
+                        <div class="panel-content">
+                            <ul class="table-tree" id="sourceTree">
+                                <!-- 基础类 -->
+                                <li class="tree-category expanded">
+                                    <div class="tree-category-header">
+                                        <i class="fa-solid fa-caret-right rotate-icon tree-category-icon"></i>
+                                        <span>基础类</span>
+                                    </div>
+                                    <ul class="tree-category-children">
+                                        <li class="tree-item" data-id="t1" data-name="仓库查询" data-cat="基础类" data-type="全量表">
+                                            <div class="tree-checkbox"></div>
+                                            <span>仓库查询</span>
+                                            <span class="tree-item-badge">全量表</span>
+                                        </li>
+                                        <li class="tree-item" data-id="t2" data-name="店铺查询" data-cat="基础类" data-type="全量表">
+                                            <div class="tree-checkbox"></div>
+                                            <span>店铺查询</span>
+                                            <span class="tree-item-badge">全量表</span>
+                                        </li>
+                                        <li class="tree-item" data-id="t3" data-name="供应商查询" data-cat="基础类" data-type="增量表">
+                                            <div class="tree-checkbox"></div>
+                                            <span>供应商查询</span>
+                                            <span class="tree-item-badge">增量表</span>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <!-- 入库类 -->
+                                <li class="tree-category">
+                                    <div class="tree-category-header">
+                                        <i class="fa-solid fa-caret-right rotate-icon tree-category-icon"></i>
+                                        <span>入库类</span>
+                                    </div>
+                                    <ul class="tree-category-children">
+                                        <li class="tree-item" data-id="t4" data-name="采购入库" data-cat="入库类" data-type="增量表">
+                                            <div class="tree-checkbox"></div>
+                                            <span>采购入库</span>
+                                            <span class="tree-item-badge">增量表</span>
+                                        </li>
+                                        <li class="tree-item" data-id="t5" data-name="退货入库" data-cat="入库类" data-type="增量表">
+                                            <div class="tree-checkbox"></div>
+                                            <span>退货入库</span>
+                                            <span class="tree-item-badge">增量表</span>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 右侧: 已选预览 -->
+                    <div class="modal-right-panel">
+                        <div class="panel-title">已选表预览</div>
+                        <!-- 批量操作 -->
+                        <div class="batch-action-bar" id="batchBar">
+                            <div class="batch-info">已选择 <span id="batchCount">0</span> 项</div>
+                            <div class="batch-actions">
+                                <span class="action-link" id="clearAllBtn">清空选择</span>
+                            </div>
+                            <i class="fa-solid fa-xmark batch-close" onclick="clearBatch()"></i>
+                        </div>
+                        
+                        <div class="selected-table-container">
+                            <div class="selected-table-empty" id="step1EmptyState">
+                                <i class="fa-solid fa-inbox"></i>
+                                <div>暂无已选表，请在左侧勾选</div>
+                            </div>
+                            
+                            <div class="table-wrapper" id="step1TableWrapper" style="display:none;">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>来源表</th>
+                                            <th>分类</th>
+                                            <th>类型</th>
+                                            <th style="width: 60px;">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="previewTbody">
+                                        <!-- JS生成 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- END STEP 1 -->
+
+                <!-- STEP 2 VIEW -->
+                <div class="step-view" id="step2View">
+                    <!-- 左侧: 已选表目录 (支持删除) -->
+                    <div class="step2-left">
+                        <div class="panel-search">
+                            <input type="text" placeholder="搜索已选表" id="step2Search">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        </div>
+                        <div class="panel-content" id="step2TableList">
+                            <!-- JS 生成树形结构 -->
+                        </div>
+                    </div>
+
+                    <!-- 右侧: 字段映射 -->
+                    <div class="step2-right" id="step2ContentInfo">
+                        <!-- JS 填充内容 -->
+                    </div>
+                    
+                    <!-- 右侧: 空状态 (当所有表都被删除时) -->
+                    <div class="step2-right" id="step2EmptyState" style="display: none;">
+                        <div class="step2-empty">
+                            <i class="fa-regular fa-folder-open"></i>
+                            <h3>未选择任何表</h3>
+                            <p>请返回上一步添加来源表</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- END STEP 2 -->
+
+            </div>
+
+            <!-- 底部按钮 -->
+            <div class="modal-footer">
+                <button class="btn btn-default" id="prevBtn" style="display: none;">上一步</button>
+                <button class="btn btn-default" id="cancelBtn">取消</button>
+                <button class="btn btn-primary" id="nextBtn" disabled>下一步</button>
+                <button class="btn btn-primary" id="confirmBtn" style="display: none;">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 数据状态管理
+         */
+        let currentStep = 1;
+        // 存储已选表数据，key为tableId
+        let selectedTables = new Map(); // { id: {id, name, cat, type} }
+        // Step 2 当前选中的表ID
+        let currentActiveTableId = null;
+
+        /**
+         * DOM 元素引用
+         */
+        const modal = document.getElementById('modalOverlay');
+        const sourceTree = document.getElementById('sourceTree');
+        
+        // 步骤 Views
+        const step1View = document.getElementById('step1View');
+        const step2View = document.getElementById('step2View');
+        const indicator1 = document.getElementById('stepIndicator1');
+        const indicator2 = document.getElementById('stepIndicator2');
+
+        // Step 1 Elements
+        const step1Empty = document.getElementById('step1EmptyState');
+        const step1Wrapper = document.getElementById('step1TableWrapper');
+        const previewTbody = document.getElementById('previewTbody');
+        const batchBar = document.getElementById('batchBar');
+        const batchCount = document.getElementById('batchCount');
+
+        // Step 2 Elements
+        const step2List = document.getElementById('step2TableList');
+        const step2Content = document.getElementById('step2ContentInfo');
+        const step2Empty = document.getElementById('step2EmptyState');
+
+        // Buttons
+        const nextBtn = document.getElementById('nextBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+
+        /**
+         * 初始化交互
+         */
+        document.getElementById('openBtn').addEventListener('click', () => {
+            resetModal();
+            modal.classList.add('show');
+        });
+        document.getElementById('closeBtn').addEventListener('click', () => modal.classList.remove('show'));
+        cancelBtn.addEventListener('click', () => modal.classList.remove('show'));
+
+        // 分类折叠
+        sourceTree.querySelectorAll('.tree-category-header').forEach(header => {
+            header.addEventListener('click', () => {
+                header.parentElement.classList.toggle('expanded');
+            });
+        });
+
+        // 搜索过滤左侧树
+        document.getElementById('tableSearchInput').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase().trim();
+            document.querySelectorAll('.tree-item').forEach(item => {
+                const name = item.dataset.name.toLowerCase();
+                if(name.includes(val)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            // 简单的搜索逻辑：如果搜索有值，默认展开所有分类
+            if(val) document.querySelectorAll('.tree-category').forEach(c => c.classList.add('expanded'));
+        });
+
+        /**
+         * Step 1: 表选择逻辑
+         */
+        sourceTree.querySelectorAll('.tree-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const checkbox = item.querySelector('.tree-checkbox');
+                const isChecked = !checkbox.classList.contains('checked');
+                const data = {
+                    id: item.dataset.id,
+                    name: item.dataset.name,
+                    cat: item.dataset.cat,
+                    type: item.dataset.type
+                };
+
+                updateSelection(data, isChecked);
+                updateTreeState(); // 更新树的视觉状态
+                renderStep1Preview();
+                updateFooterState();
+            });
+        });
+
+        function updateSelection(tableData, isAdd) {
+            if (isAdd) {
+                selectedTables.set(tableData.id, tableData);
+            } else {
+                selectedTables.delete(tableData.id);
+            }
+        }
+
+        // 同步左侧树的勾选状态
+        function updateTreeState() {
+            sourceTree.querySelectorAll('.tree-item').forEach(item => {
+                const id = item.dataset.id;
+                const checkbox = item.querySelector('.tree-checkbox');
+                if (selectedTables.has(id)) {
+                    checkbox.classList.add('checked');
+                } else {
+                    checkbox.classList.remove('checked');
+                }
+            });
+        }
+
+        // 渲染 Preview 表格
+        function renderStep1Preview() {
+            const list = Array.from(selectedTables.values());
+            if (list.length === 0) {
+                step1Empty.style.display = 'flex';
+                step1Wrapper.style.display = 'none';
+                batchBar.classList.remove('show');
+            } else {
+                step1Empty.style.display = 'none';
+                step1Wrapper.style.display = 'block';
+                batchBar.classList.add('show');
+                batchCount.textContent = list.length;
+            }
+
+            previewTbody.innerHTML = list.map(t => `
+                <tr>
+                    <td>${t.name}</td>
+                    <td><span style="background:#f0f2f5; padding:2px 6px; border-radius:4px; color:#909399; font-size:11px;">${t.cat}</span></td>
+                    <td>${t.type}</td>
+                    <td>
+                        <i class="fa-regular fa-trash-can" 
+                           style="color:#f56c6c; cursor:pointer;" 
+                           onclick="removeOne('${t.id}')"></i>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 全局暴露给HTML onclick
+        window.removeOne = function(id) {
+            selectedTables.delete(id);
+            updateTreeState();
+            renderStep1Preview();
+            updateFooterState();
+        };
+
+        window.clearBatch = function() {
+            // 这里仅仅是关闭批量条，不一定清空，为了演示对应按钮
+            batchBar.classList.remove('show');
+        };
+        
+        document.getElementById('clearAllBtn').addEventListener('click', () => {
+            selectedTables.clear();
+            updateTreeState();
+            renderStep1Preview();
+            updateFooterState();
+        });
+
+        function updateFooterState() {
+            if (currentStep === 1) {
+                nextBtn.disabled = selectedTables.size === 0;
+            } else {
+                // Step 2
+                confirmBtn.disabled = selectedTables.size === 0;
+            }
+        }
+
+        /**
+         * 导航逻辑
+         */
+        nextBtn.addEventListener('click', () => {
+            if (currentStep === 1) {
+                enterStep2();
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentStep === 2) {
+                enterStep1();
+            }
+        });
+
+        function enterStep2() {
+            currentStep = 2;
+            
+            // UI 切换
+            step1View.classList.remove('active');
+            step2View.classList.add('active');
+            indicator1.classList.remove('active');
+            indicator2.classList.add('active');
+            
+            // 按钮显隐
+            prevBtn.style.display = 'block';
+            nextBtn.style.display = 'none';
+            confirmBtn.style.display = 'block';
+
+            // 默认选中第一个
+            if (selectedTables.size > 0 && !currentActiveTableId) {
+                currentActiveTableId = selectedTables.keys().next().value;
+            }
+
+            renderStep2Sidebar();
+            renderStep2Main();
+            updateFooterState();
+        }
+
+        function enterStep1() {
+            currentStep = 1;
+            
+            step2View.classList.remove('active');
+            step1View.classList.add('active');
+            indicator2.classList.remove('active');
+            indicator1.classList.add('active');
+
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'block';
+            confirmBtn.style.display = 'none';
+            
+            // 回到第一步时，因为可能在第二步删除了表，需要同步 第一步的视图
+            updateTreeState();
+            renderStep1Preview();
+            updateFooterState();
+        }
+
+        function resetModal() {
+            selectedTables.clear();
+            currentActiveTableId = null;
+            enterStep1();
+            updateTreeState(); // 清空左侧树选择
+            renderStep1Preview(); // 重置右侧预览
+            document.getElementById('tableSearchInput').value = '';
+        }
+
+        /**
+         * Step 2: 逻辑
+         */
+        function renderStep2Sidebar() {
+            const list = Array.from(selectedTables.values());
+            
+            if (list.length === 0) {
+                // 全部被删除
+                step2List.innerHTML = '';
+                showStep2EmptyState();
+                return;
+            }
+
+            // 按分类分组
+            const groups = {};
+            list.forEach(t => {
+                if (!groups[t.cat]) groups[t.cat] = [];
+                groups[t.cat].push(t);
+            });
+
+            let html = '';
+            for (const cat in groups) {
+                html += `<div class="step2-list-group-title">${cat}</div>`;
+                groups[cat].forEach(t => {
+                    const isActive = t.id === currentActiveTableId ? 'active' : '';
+                    html += `
+                        <div class="step2-list-item ${isActive}" onclick="switchActiveTable('${t.id}')">
+                            <span><i class="fa-solid fa-table" style="margin-right:6px; opacity:0.7;"></i> ${t.name}</span>
+                            <div class="item-action-icon" onclick="showDeleteConfirm(event, '${t.id}')">
+                                <i class="fa-solid fa-ellipsis"></i>
+                            </div>
+                            <!-- 删除确认 popover (模拟) -->
+                            <div class="pop-confirm" id="pop-${t.id}" onclick="event.stopPropagation()">
+                                <p><i class="fa-solid fa-circle-exclamation" style="color:#e6a23c"></i> 确定删除该表(含子表)?</p>
+                                <div class="pop-btn-group">
+                                    <button class="pop-btn pop-btn-cancel" onclick="hideDeleteConfirm('${t.id}')">取消</button>
+                                    <button class="pop-btn pop-btn-ok" onclick="confirmDeleteTable('${t.id}')">确定</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            step2List.innerHTML = html;
+            
+            // 确保无空状态
+            step2Content.style.display = 'flex';
+            step2Empty.style.display = 'none';
+        }
+
+        window.switchActiveTable = function(id) {
+            currentActiveTableId = id;
+            renderStep2Sidebar(); // 重新渲染以更新高亮
+            renderStep2Main();
+        }
+
+        window.showDeleteConfirm = function(e, id) {
+            e.stopPropagation();
+            // 先隐藏其他的
+            document.querySelectorAll('.pop-confirm').forEach(el => el.classList.remove('show'));
+            const pop = document.getElementById(`pop-${id}`);
+            if(pop) pop.classList.add('show');
+        }
+
+        window.hideDeleteConfirm = function(id) {
+             const pop = document.getElementById(`pop-${id}`);
+             if(pop) pop.classList.remove('show');
+        }
+
+        window.confirmDeleteTable = function(id) {
+            // 删除逻辑
+            selectedTables.delete(id);
+            
+            // 如果删的是当前选中的，选中剩下的第一个
+            if (id === currentActiveTableId) {
+                if (selectedTables.size > 0) {
+                    currentActiveTableId = selectedTables.keys().next().value;
+                } else {
+                    currentActiveTableId = null;
+                    showStep2EmptyState();
+                }
+            }
+            
+            renderStep2Sidebar();
+            if(selectedTables.size > 0) renderStep2Main();
+            updateFooterState();
+        }
+
+        function showStep2EmptyState() {
+            step2Content.style.display = 'none';
+            step2Empty.style.display = 'flex';
+            // 禁用确定按钮
+            confirmBtn.disabled = true;
+        }
+
+        // 渲染右侧字段映射 (Mock)
+        function renderStep2Main() {
+            if (!currentActiveTableId) return;
+            const table = selectedTables.get(currentActiveTableId);
+            
+            step2Content.innerHTML = `
+                <div class="mapping-header">
+                    <div class="mapping-title">
+                        <span class="source-tag">来源</span> ${table.name} 
+                        <span style="color:#c0c4cc; margin:0 10px;">/</span> 
+                        <i class="fa-solid fa-arrow-right-long" style="color:#909399; font-size:12px;"></i>
+                        <span style="margin-left:8px;">目标表_${table.name}_Clean</span>
+                    </div>
+                </div>
+                <div class="mapping-body">
+                    <div class="mapping-card">
+                        <div class="mapping-card-header">
+                            <span style="font-size:12px; font-weight:600;">同名映射 (自动匹配)</span>
+                            <i class="fa-solid fa-rotate-right" style="cursor:pointer; color:#409eff;"></i>
+                        </div>
+                        <!-- Mock Fields -->
+                        ${generateMockFieldRow('id', '主键 ID', 'id (number)')}
+                        ${generateMockFieldRow('create_time', '创建时间', 'create_time (date)')}
+                        ${generateMockFieldRow('status', '单据状态', 'status (string)')}
+                        ${generateMockFieldRow('remark', '备注信息', 'remark (text)')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateMockFieldRow(key, sourceName, targetName) {
+            return `
+                <div class="mock-mapping-row">
+                    <div class="mock-field">
+                        <i class="fa-solid fa-key" style="color:#e6a23c; margin-right:6px; font-size:10px;"></i>
+                        ${key} - ${sourceName}
+                    </div>
+                    <div class="mock-icon"><i class="fa-solid fa-arrow-right"></i></div>
+                    <div class="mock-field target">
+                        ${targetName}
+                    </div>
+                    <div style="margin-left: 10px; color:#f56c6c; cursor:pointer;"><i class="fa-solid fa-xmark"></i></div>
+                </div>
+            `;
+        }
+
+        // 点击页面其他地方关闭 Pop confirm
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.pop-confirm') && !e.target.closest('.item-action-icon')) {
+                document.querySelectorAll('.pop-confirm').forEach(el => el.classList.remove('show'));
+            }
+        });
+
+    </script>
+</body>
+</html>

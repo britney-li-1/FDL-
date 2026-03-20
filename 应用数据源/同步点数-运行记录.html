@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同步点数 - 运行记录</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            color: #333; 
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+    </style>
+</head>
+<body class="flex h-screen w-full bg-gray-50 font-sans text-sm text-gray-700">
+    
+    <!-- 左侧侧边栏 -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+        <div class="p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="font-bold text-base text-gray-900">定时管道</h1>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded flex items-center gap-1 text-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    新建
+            </button>
+          </div>
+            <div class="relative mb-4">
+            <input 
+              type="text" 
+              placeholder="搜索任务/文件夹" 
+                    class="w-full border border-gray-300 rounded px-8 py-1.5 text-xs focus:outline-none focus:border-blue-500"
+                />
+                <svg class="w-3.5 h-3.5 absolute left-2.5 top-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <svg class="w-3.5 h-3.5 absolute right-2.5 top-2 text-gray-400 cursor-pointer hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+          </div>
+            
+            <div class="space-y-1 overflow-y-auto custom-scrollbar">
+                <div class="text-xs text-gray-500 mb-2">所有任务</div>
+                
+                <!-- 文件夹1 -->
+                <div class="select-none">
+                    <div class="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer text-gray-700">
+                        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                        <svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
+                        </svg>
+                        <span class="truncate ml-1">文件夹1</span>
+                    </div>
+                    <div class="pl-4">
+                        <!-- 文件夹2 -->
+                        <div class="select-none">
+                            <div class="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer text-gray-700">
+                                <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                                <svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
+                                </svg>
+                                <span class="truncate ml-1">文件夹2</span>
+                            </div>
+                            <div class="pl-4">
+                                <!-- 文件夹3 -->
+                                <div class="select-none">
+                                    <div class="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer text-gray-700">
+                                        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                        <svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
+                                        </svg>
+                                        <span class="truncate ml-1">文件夹3</span>
+                                    </div>
+                                    <div class="pl-4">
+                                        <!-- 任务1 -->
+                                        <div class="flex items-center gap-2 px-2 py-1.5 ml-5 rounded cursor-pointer bg-blue-100 text-blue-700">
+                                            <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            <span class="truncate">任务1</span>
+                                        </div>
+                                        <!-- 任务2 -->
+                                        <div class="flex items-center gap-2 px-2 py-1.5 ml-5 rounded cursor-pointer hover:bg-gray-100 text-gray-600">
+                                            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            <span class="truncate">任务2</span>
+                                        </div>
+                                        <!-- 任务3 -->
+                                        <div class="flex items-center gap-2 px-2 py-1.5 ml-5 rounded cursor-pointer hover:bg-gray-100 text-gray-600">
+                                            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            <span class="truncate">任务3</span>
+                                        </div>
+                                        <!-- 文件夹4 -->
+                                        <div class="select-none">
+                                            <div class="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer text-gray-700">
+                                                <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                                </svg>
+                                                <svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
+                                                </svg>
+                                                <span class="truncate ml-1">文件夹4</span>
+                                            </div>
+                                            <div class="pl-4">
+                                                <!-- 任务4 -->
+                                                <div class="flex items-center gap-2 px-2 py-1.5 ml-5 rounded cursor-pointer hover:bg-gray-100 text-gray-600">
+                                                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                    </svg>
+                                                    <span class="truncate">任务4</span>
+                                                </div>
+                                                <!-- 任务5 -->
+                                                <div class="flex items-center gap-2 px-2 py-1.5 ml-5 rounded cursor-pointer hover:bg-gray-100 text-gray-600">
+                                                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                    </svg>
+                                                    <span class="truncate">任务5</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 文件夹7 -->
+                <div class="select-none">
+                    <div class="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer text-gray-700">
+                        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                        <svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
+                        </svg>
+                        <span class="truncate ml-1">文件夹7</span>
+                    </div>
+                    <div class="pl-4">
+                        <!-- 任务6 -->
+                        <div class="flex items-center gap-2 px-2 py-1.5 ml-5 rounded cursor-pointer hover:bg-gray-100 text-gray-600">
+                            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span class="truncate">任务6</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 任务7 -->
+                <div class="flex items-center gap-2 px-2 py-1.5 ml-5 rounded cursor-pointer hover:bg-gray-100 text-gray-600">
+                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="truncate">任务7</span>
+                </div>
+                
+                <!-- 任务8 -->
+                <div class="flex items-center gap-2 px-2 py-1.5 ml-5 rounded cursor-pointer hover:bg-gray-100 text-gray-600">
+                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="truncate">任务8</span>
+                </div>
+          </div>
+        </div>
+      </aside>
+
+    <!-- 右侧主要内容区 -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-white">
+        
+        <!-- 顶部 Header 和 元信息 -->
+        <div class="px-6 py-4 border-b border-gray-100">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-2">
+                    <div class="bg-blue-100 p-1.5 rounded">
+                        <svg class="w-4.5 h-4.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+              </div>
+                    <h2 class="text-lg font-bold text-gray-900">定时管道任务1</h2>
+            </div>
+                <div class="flex gap-2">
+                    <button class="border border-gray-300 text-gray-600 px-3 py-1.5 rounded bg-white hover:bg-gray-50 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        任务控制
+              </button>
+                    <button class="border border-gray-300 text-gray-600 px-3 py-1.5 rounded bg-white hover:bg-gray-50 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        定时调度
+              </button>
+            </div>
+          </div>
+
+            <div class="text-xs text-gray-500 flex gap-6 mb-2">
+                <span>创建人：<span class="text-gray-900">Lana</span></span>
+            <span>创建时间：2023-03-02 12:10:10</span>
+                <span>定时调度：<span class="text-gray-900">未配置</span></span>
+          </div>
+            <div class="text-xs text-gray-400 truncate mb-4">
+            描述：描述文案描述文案描述文案描述文案描述文案描述文案描述文案描述文案...
+          </div>
+
+            <!-- 管道流向图 -->
+            <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between border border-gray-100 mb-2">
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-5 h-5 bg-blue-500 rounded-sm flex items-center justify-center text-white text-[10px]">吉</div>
+                        <span class="text-gray-600">吉客云 · <span class="font-bold text-gray-900">_5.175数据连接</span></span>
+                    </div>
+                    <div class="px-3 text-blue-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-5 h-5 bg-teal-600 rounded-sm flex items-center justify-center text-white text-[10px]">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                            </svg>
+                </div>
+                        <span class="text-gray-600">MySQL · <span class="font-bold text-gray-900">MySQL</span> (default)</span>
+                </div>
+                </div>
+                <button class="p-1 hover:bg-gray-200 rounded border border-gray-200 bg-white">
+                    <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+             </button>
+          </div>
+
+            <div class="text-xs text-gray-500 flex items-center gap-1 cursor-pointer hover:text-gray-700">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+                更多信息
+          </div>
+            <div class="text-xs text-gray-500 pl-4 mt-1">
+                同步源表结构变化：<span class="text-gray-900">已开启</span>
+          </div>
+        </div>
+
+        <!-- Tab 导航 -->
+        <div class="px-6 border-b border-gray-200">
+            <div class="flex gap-6 text-sm">
+                <button class="py-3 text-gray-500 hover:text-blue-600 font-medium border-b-2 border-transparent hover:border-blue-600">同步配置</button>
+                <button class="py-3 text-blue-600 font-bold border-b-2 border-blue-600">运行记录</button>
+          </div>
+        </div>
+
+        <!-- 底部详情区域 (可滚动) -->
+        <div class="flex-1 overflow-y-auto px-6 py-4">
+            
+            <!-- 运行状态卡片 -->
+            <div class="border border-gray-200 rounded-lg p-4 mb-4 shadow-sm relative transition-colors duration-300">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="bg-blue-50 text-blue-600 border border-blue-200 text-xs px-2 py-0.5 rounded">运行中</span>
+                    <div class="text-blue-600 text-xs flex gap-3">
+                        <button class="hover:underline">运行日志</button>
+                        <button class="hover:underline">前往任务运维</button>
+               </div>
+            </div>
+            
+                <div class="text-xs text-gray-500 mb-3 font-mono">
+                    记录ID：<span class="text-gray-900">fd63d5d6-3f8b-4d92-8ac6-fa3e542c6017</span>
+            </div>
+
+                <div class="flex flex-wrap gap-y-2 gap-x-8 text-xs text-gray-500">
+               <div>
+                        已同步量：<span class="text-gray-900 font-medium">12</span>
+               </div>
+               <div>
+                        开始时间：<span class="text-gray-900 font-medium">2023-03-02 12:10:10</span>
+               </div>
+               <div>
+                        结束时间：<span class="text-gray-900 font-medium">--</span>
+               </div>
+               <div>
+                        触发方式：<span class="text-gray-900 font-medium">手动</span>
+               </div>
+
+                    <!-- 消耗同步点数 -->
+                    <div class="flex items-center">
+                        <span class="mr-1">消耗同步点数：</span>
+                        <span class="text-gray-900 font-medium">150</span>
+                        <button class="ml-2 text-blue-600 hover:text-blue-800 flex items-center gap-0.5 cursor-pointer hover:underline">
+                       总览
+                    </button>
+                 </div>
+                 </div>
+            </div>
+
+            <!-- 下方表格控制条 -->
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex gap-4 text-xs">
+                    <button class="pb-1 text-blue-600 bg-blue-100 px-2 rounded">全部</button>
+                    <button class="pb-1 text-gray-500 hover:text-gray-800">待同步 <span class="text-gray-500">5</span></button>
+                    <button class="pb-1 text-gray-500 hover:text-gray-800">同步中 <span class="text-gray-500">5</span></button>
+                    <button class="pb-1 text-gray-500 hover:text-gray-800">同步成功 <span class="text-teal-600">5</span></button>
+                    <button class="pb-1 text-gray-500 hover:text-gray-800">同步失败 <span class="text-red-500">5</span></button>
+                    <button class="pb-1 text-gray-500 hover:text-gray-800">中断 <span class="text-orange-500">5</span></button>
+             </div>
+             
+                <div class="flex items-center gap-3">
+                    <svg class="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <div class="h-4 w-[1px] bg-gray-300"></div>
+                    <button class="flex items-center gap-1 text-xs text-gray-600 hover:text-red-600">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+                        </svg>
+                        终止所有表
+               </button>
+             </div>
+          </div>
+
+            <!-- 表格 -->
+            <div class="border border-gray-200 rounded w-full text-xs">
+                <!-- 表头 -->
+                <div class="bg-gray-50 flex border-b border-gray-200 py-2.5 font-medium text-gray-600">
+                    <div class="flex-1 px-4 border-r border-gray-100">来源表</div>
+                    <div class="flex-1 px-4 border-r border-gray-100">目标表</div>
+                    <div class="w-32 px-4 border-r border-gray-100 flex items-center justify-between">
+                        同步状态 <span class="text-gray-400 text-[10px]">▼</span>
+                    </div>
+                    <div class="w-40 px-4 border-r border-gray-100">数据同步起点</div>
+                    <div class="w-12 px-2 flex justify-center text-gray-400">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- 分组头部 -->
+                <div class="bg-white border-b border-gray-100 px-4 py-2 flex items-center gap-2 text-gray-500">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                    分类：基础类
+                </div>
+                
+                <!-- 行 1 -->
+                <div class="flex bg-white hover:bg-gray-50 border-b border-gray-100 py-3 text-gray-700">
+                    <div class="flex-1 px-4 flex items-center">店铺查询</div>
+                    <div class="flex-1 px-4">店铺查询</div>
+                    <div class="w-32 px-4 flex items-center gap-1.5">
+                        <div class="w-1.5 h-1.5 rounded-full bg-teal-500"></div>
+                        同步成功
+                    </div>
+                    <div class="w-40 px-4">2024-3-22 12:10:10</div>
+                    <div class="w-12 px-2 flex justify-center gap-2 text-gray-400">
+                        <svg class="w-3.5 h-3.5 hover:text-blue-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <div class="w-3 h-3 border border-gray-400 rounded-sm"></div>
+               </div>
+            </div>
+
+                <!-- 行 2 -->
+                <div class="flex bg-white hover:bg-gray-50 border-b border-gray-100 py-3 text-gray-700">
+                    <div class="flex-1 px-4 flex items-center">仓库查询</div>
+                    <div class="flex-1 px-4">仓库查询</div>
+                    <div class="w-32 px-4 flex items-center gap-1.5">
+                        <div class="w-1.5 h-1.5 rounded-full bg-blue-600"></div>
+                        同步中
+                    </div>
+                    <div class="w-40 px-4">2024-3-22 12:10:10</div>
+                    <div class="w-12 px-2 flex justify-center gap-2 text-gray-400">
+                        <svg class="w-3.5 h-3.5 hover:text-blue-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <div class="w-3 h-3 border border-gray-400 rounded-sm"></div>
+                    </div>
+            </div>
+            
+                <!-- 分组头部 2 -->
+                <div class="bg-white border-b border-gray-100 px-4 py-2 flex items-center gap-2 text-gray-500 mt-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                    分类：库存类
+                </div>
+
+                <!-- 行 3 -->
+                <div class="flex bg-white hover:bg-gray-50 border-b border-gray-100 py-3 text-gray-700">
+                    <div class="flex-1 px-4 flex items-center">
+                        盘点入库单查询
+                        <svg class="w-3 h-3 ml-1 text-gray-300 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 px-4">盘点入库单查询</div>
+                    <div class="w-32 px-4 flex items-center gap-1.5">
+                        <div class="w-1.5 h-1.5 rounded-full bg-teal-500"></div>
+                        同步成功
+                    </div>
+                    <div class="w-40 px-4">2024-3-22 12:10:10</div>
+                    <div class="w-12 px-2 flex justify-center gap-2 text-gray-400">
+                        <svg class="w-3.5 h-3.5 hover:text-blue-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <div class="w-3 h-3 border border-gray-400 rounded-sm"></div>
+                    </div>
+                </div>
+                
+                <!-- 子行 -->
+                <div class="flex bg-white hover:bg-gray-50 border-b border-gray-100 py-3 text-gray-700">
+                    <div class="flex-1 px-4 pl-10 flex items-center gap-2 text-gray-500">
+                        <div class="w-3 h-3 border-l border-b border-gray-300"></div>
+                        货品档案查询_单品信息详情
+                    </div>
+                    <div class="flex-1 px-4 text-gray-500">货品档案查询_单品信息详情</div>
+                    <div class="w-32 px-4 flex items-center gap-1.5">
+                        <div class="w-1.5 h-1.5 rounded-full bg-teal-500"></div>
+                        同步成功
+                    </div>
+                    <div class="w-40 px-4 text-gray-400">跟随主表</div>
+                    <div class="w-12 px-2 flex justify-center gap-2 text-gray-400">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+            </div>
+
+                <!-- 行 4 -->
+                <div class="flex bg-white hover:bg-gray-50 border-b border-gray-100 py-3 text-gray-700">
+                    <div class="flex-1 px-4 flex items-center">
+                        入库瞬时成本查询
+                        <svg class="w-3 h-3 ml-1 text-gray-300 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 px-4">入库瞬时成本查询</div>
+                    <div class="w-32 px-4 flex items-center gap-1.5">
+                        <div class="w-1.5 h-1.5 rounded-full bg-blue-600"></div>
+                        同步中
+               </div>
+                    <div class="w-40 px-4">2024-3-22 12:10:10</div>
+                    <div class="w-12 px-2 flex justify-center gap-2 text-gray-400">
+                        <svg class="w-3.5 h-3.5 hover:text-blue-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <div class="w-3 h-3 border border-gray-400 rounded-sm"></div>
+               </div>
+            </div>
+
+                <!-- 子行 -->
+                <div class="flex bg-white hover:bg-gray-50 border-b border-gray-100 py-3 text-gray-700">
+                    <div class="flex-1 px-4 pl-10 flex items-center gap-2 text-gray-500">
+                        <div class="w-3 h-3 border-l border-b border-gray-300"></div>
+                        入库瞬时成本查询_明细
+                    </div>
+                    <div class="flex-1 px-4 text-gray-500">入库瞬时成本查询_明细</div>
+                    <div class="w-32 px-4 flex items-center gap-1.5">
+                        <div class="w-1.5 h-1.5 rounded-full bg-blue-600"></div>
+                        同步中
+               </div>
+                    <div class="w-40 px-4 text-gray-400">跟随主表</div>
+                    <div class="w-12 px-2 flex justify-center gap-2 text-gray-400">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+               </div>
+            </div>
+
+          </div>
+            <div class="mt-2 text-xs text-gray-500">
+                共 <span class="text-blue-600 font-bold">6</span> 张表，其中有2张子表
+          </div>
+
+        </div>
+      </main>
+</body>
+</html>

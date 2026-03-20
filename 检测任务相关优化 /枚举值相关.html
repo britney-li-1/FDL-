@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>检测任务页 - 高级完整优化版</title>
+    <style>
+        /* ================= 1. 全局与基础规范 ================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 14px;
+            color: #303133;
+            background-color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* 整体防滚动，主体区自滚动 */
+        }
+        
+        /* 品牌色定义 */
+        :root {
+            --brand-color: #2854fe;
+            --brand-hover: #4068ff;
+            --brand-light: rgba(40, 84, 254, 0.04);
+            --border-base: #dcdfe6;
+            --border-light: #ebeef5;
+            --text-main: #303133;
+            --text-regular: #606266;
+            --text-secondary: #909399;
+            --bg-page: #f5f7fa;
+            --bg-card: #fff;
+            --bg-soft: #f7f8fa;
+        }
+
+        /* 基础控件：输入框、下拉框、按钮 */
+        .form-select, .form-input {
+            height: 32px;
+            border: 1px solid var(--border-base);
+            border-radius: 4px;
+            padding: 0 12px;
+            color: var(--text-regular);
+            background-color: var(--bg-card);
+            outline: none;
+            transition: all 0.2s;
+        }
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg viewBox='0 0 1024 1024' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M859.9 380c-2.8-3.6-6.8-5.7-11.2-5.7H175.3c-4.4 0-8.4 2.1-11.2 5.7-2.8 3.5-3.8 8.1-2.7 12.5l336.7 453.6c2.8 3.8 7.3 6 12.1 6s9.3-2.2 12.1-6l336.7-453.6c1.1-4.4 0.1-9-2.7-12.5z' fill='%23c0c4cc'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 10px;
+            padding-right: 28px;
+        }
+        .form-select:focus, .form-input:focus { 
+            border-color: var(--brand-color); 
+            box-shadow: 0 0 0 2px rgba(40,84,254,0.1);
+        }
+        .text-link { color: var(--brand-color); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; font-size: 13px; }
+        .text-link:hover { color: var(--brand-hover); }
+
+        .btn-primary { background: var(--brand-color); color: #fff; border: none; padding: 0 20px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.2s;}
+        .btn-primary:hover { background: var(--brand-hover); }
+        .btn-hollow { border: 1px solid #cce0ff; background: #f0f5ff; color: var(--brand-color); padding: 0 16px; height: 32px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s;}
+        .btn-hollow:hover { background: #e6f0ff; }
+
+        /* ================= 2. 页面顶级框架 ================= */
+        header {
+            height: 56px;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-card);
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .header-back { display: flex; align-items: center; margin-right: 24px; cursor: pointer; font-weight: 500;}
+        .header-input { border: none; margin-left:16px; width: 300px; height: 24px; outline: none; font-size: 14px;}
+
+        main {
+            flex: 1;
+            overflow-y: auto;
+            background-color: var(--bg-page);
+            padding: 24px;
+        }
+
+        .page-card {
+            background: var(--bg-card);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            margin: 0 auto;
+            max-width: 1400px; 
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+        }
+
+        footer {
+            height: 56px;
+            border-top: 1px solid var(--border-light);
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        /* 模块标题横线 */
+        .section-title { display: flex; align-items: center; font-weight: bold; font-size: 14px; color: var(--text-main); margin: 32px; }
+        .section-title::after { content: ''; flex: 1; border-top: 1px solid var(--border-light); margin-left: 16px; }
+        .section-title:first-child { margin-top: 24px; }
+
+        /* ================= 3. 检测对象区域 (上部) ================= */
+        .base-row { display: flex; align-items: flex-start; margin-bottom: 24px; padding: 0 48px; }
+        .base-label { width: 100px; color: var(--text-regular); padding-top: 6px; flex-shrink: 0;}
+        
+        .picker-container { border: 1px solid var(--border-light); border-radius: 4px; display: flex; min-height: 200px; width: 100%; max-width: 900px; margin-top: 12px; }
+        .picker-left { width: 240px; border-right: 1px solid var(--border-light); padding: 8px 0; background: var(--bg-card); }
+        .db-item { display: flex; align-items: center; padding: 8px 16px; cursor: pointer; color: var(--text-regular); }
+        .db-item:hover { background: var(--bg-page); }
+        .db-item.active { background: #f0f5ff; font-weight: 500; color: var(--brand-color); }
+        .db-icon { color: #52c41a; margin-right: 8px; font-size: 16px;}
+        
+        .picker-right { flex: 1; padding: 16px; display: flex; align-content: flex-start; flex-wrap: wrap; gap: 8px; }
+        .table-tag { display: inline-flex; align-items: center; border: 1px solid var(--border-base); padding: 4px 10px; border-radius: 4px; font-size: 12px; color: var(--text-regular); background: var(--bg-card); }
+        .table-tag span { margin: 0 6px; }
+        .table-tag svg { cursor: pointer; fill: var(--text-secondary); width: 10px; height: 10px;}
+
+        /* ================= 4. 规则配置区域 (下半部分) ================= */
+        .rule-layout { display: flex; border-top: 1px solid var(--border-light); flex: 1; min-height: 500px;}
+        
+        /* 左侧边栏 */
+        .rule-sidebar { width: 240px; border-right: 1px solid var(--border-light); padding: 16px; position: relative; background: #fafbfc; }
+        .rule-card { background: #eef3ff; border-left: 3px solid var(--brand-color); padding: 12px 16px; border-radius: 0 4px 4px 0; margin-top: 16px; position: relative; cursor: pointer;}
+        .rule-card-title { font-weight: bold; margin-bottom: 4px; color: var(--text-main);}
+        .rule-card-type { font-size: 12px; color: var(--text-secondary); }
+        .icon-warning { position: absolute; right: 12px; top: 16px; color: #e6a23c; border:1px solid #e6a23c; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 10px;}
+        .resizer-handle { position: absolute; right: -4px; top: 50%; color: #c0c4cc; background: #fff; font-size: 16px; line-height: 1; cursor: col-resize; box-shadow: 0 0 2px rgba(0,0,0,0.1);}
+
+        /* 右侧核心表单区 */
+        .rule-content { flex: 1; padding: 24px 48px; max-width: 1000px;}
+        .rule-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; margin-bottom: 32px; color: var(--text-main);}
+        .action-delete { color: #f56c6c; font-weight: normal; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 4px;}
+        .action-delete:hover { opacity: 0.8; }
+
+        /* 表单列排版 */
+        .f-row { display: flex; align-items: flex-start; margin-bottom: 24px; }
+        .f-label { width: 120px; color: var(--text-main); padding-top: 6px; flex-shrink: 0; font-weight: 500;}
+        .f-cnt { flex: 1; max-width: 800px; }
+        
+        /* 单选/组合框 */
+        .rc-group { display: flex; gap: 24px; padding-top: 6px; flex-wrap: wrap;}
+        .rc-item { display: flex; align-items: center; cursor: pointer; color: var(--text-regular);}
+        .rc-item input { margin-right: 6px; accent-color: var(--brand-color); width: 15px; height: 15px; cursor: pointer;}
+
+        /* ================= 5. ★★★ 优化核心：软包裹枚举值区域 ★★★ ================= */
+        .soft-container {
+            margin-top: 12px;
+            padding: 20px 24px;
+            background-color: var(--bg-soft); /* 高级淡灰底色，彻底去线 */
+            border-radius: 6px;
+        }
+
+        .inner-row { display: flex; align-items: flex-start; margin-bottom: 16px; }
+        .inner-row:last-child { margin-bottom: 0; }
+        
+        .inner-label { 
+            width: 70px; /* 收紧宽度，消除太平洋间距 */
+            color: var(--text-regular); 
+            padding-top: 7px; 
+            font-size: 13px; /* 字号降级 */
+            flex-shrink: 0;
+            text-align: right; /* 右对齐吸附输入框 */
+            margin-right: 16px;
+        }
+        
+        .inner-cnt { flex: 1; display:flex; flex-direction: column; }
+        .inner-line { display: flex; align-items: center; gap: 8px; }
+
+        /* 高级提示说明块 */
+        .info-block {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background-color: var(--brand-light); /* 淡品牌色底 */
+            border-radius: 4px;
+            display: flex;
+            align-items: flex-start;
+            font-size: 12px;
+            color: var(--text-regular);
+            line-height: 1.6;
+        }
+        .info-block svg { flex-shrink: 0; fill: var(--brand-color); margin-right: 8px; margin-top: 2px; }
+
+        /* ================= 6. 其他面版块 ================= */
+        /* 预期范围面板 */
+        .condition-wrapper { border: 1px solid var(--border-light); border-radius: 4px; background: #fafbfc;}
+        .condition-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;}
+        .btn-add-cond { background: #f0f5ff; border: 1px solid #cce0ff; color: var(--brand-color); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center;}
+        .c-header { padding: 12px 16px; border-bottom: 1px solid var(--border-light); color: var(--text-regular); font-weight: 500; background: var(--bg-card); border-radius: 4px 4px 0 0;}
+        .c-body { padding: 32px; text-align: center; color: var(--text-secondary); font-size: 13px;}
+
+        /* Icon 辅助 */
+        .icon-help { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1px solid #c0c4cc; border-radius: 50%; color: #c0c4cc; font-size: 10px; margin-left: 4px; cursor: help; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="header-back">
+            <svg viewBox="0 0 1024 1024" width="16" height="16" style="margin-right:8px"><path d="M724 218.3V141c0-6.7-7.7-10.4-12.9-6.3L260.3 486.8a31.86 31.86 0 0 0 0 50.3l450.8 353.1c5.3 4.1 12.9.4 12.9-6.3v-77.3c0-4.9-2.3-9.6-6.1-12.6l-360-281 360-281.1c3.8-3 6.1-7.7 6.1-12.6z" fill="#333"/></svg>
+            返回
+        </div>
+        <div style="border-left: 1px solid var(--border-light); height: 16px;"></div>
+        <input type="text" class="header-input" value="这里是主检测任务名">
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <div class="page-card">
+            
+            <!-- ====== 上半部：检测对象 ====== -->
+            <div>
+                <div class="section-title">检测对象</div>
+                <div class="base-row">
+                    <div class="base-label">数据连接</div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <select class="form-select" style="width: 250px;"><option>MySQL</option></select>
+                        <select class="form-select" style="width: 250px;"><option>数据连接1</option></select>
+                        <a class="text-link" style="margin-left: 8px;">测试连接</a>
+                    </div>
+                </div>
+
+                <div class="base-row">
+                    <div class="base-label">检测对象</div>
+                    <div style="flex: 1;">
+                        <button class="btn-hollow"><span style="font-size:16px; margin-right:4px;">+</span> 添加表</button>
+                        
+                        <!-- 选表穿梭框模拟 -->
+                        <div class="picker-container">
+                            <div class="picker-left">
+                                <div class="db-item"><span class="db-icon">🛢️</span> Database name</div>
+                                <div class="db-item active"><span class="db-icon">🛢️</span> Database name1</div>
+                                <div class="db-item"><span class="db-icon">🛢️</span> Database name2</div>
+                            </div>
+                            <div class="picker-right">
+                                <div class="table-tag">table1 <svg viewBox="0 0 1024 1024"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"/><path d="M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z"/></svg></div>
+                                <div class="table-tag">订单销售目标表 <svg viewBox="0 0 1024 1024"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"/><path d="M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z"/></svg></div>
+                                <div class="table-tag">订单销售目标表1 <svg viewBox="0 0 1024 1024"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"/><path d="M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z"/></svg></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== 下半部：规则配置 ====== -->
+            <div class="section-title" style="margin-top: 0;">规则配置</div>
+            <div class="rule-layout">
+                
+                <!-- 左侧：规则列表菜单 -->
+                <div class="rule-sidebar">
+                    <button class="btn-hollow" style="width: 100%;"><span style="font-size:16px; margin-right:4px;">+</span> 添加规则</button>
+                    <div class="rule-card">
+                        <div class="rule-card-title">监控规则1 ✎</div>
+                        <div class="rule-card-type">强规则</div>
+                        <div class="icon-warning">!</div>
+                    </div>
+                    <div class="resizer-handle">⋮</div>
+                </div>
+
+                <!-- 右侧：正在编辑的规则详情 -->
+                <div class="rule-content">
+                    <div class="rule-header">
+                        <div style="display:flex; align-items:center; gap:8px;">监控规则1 ✎</div>
+                        <div class="action-delete">
+                            <svg viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor"><path d="M349 202.6c0-5.4 4.4-9.8 9.8-9.8h279.1c5.4 0 9.8 4.4 9.8 9.8v56.2H349v-56.2zM805 289H219c-4.4 0-8 3.6-8 8v27.1c0 4.4 3.6 8 8 8h36.7l23.5 540.3c.3 7 6.1 12.6 13.1 12.6h405.3c7 0 12.8-5.6 13.1-12.6l23.5-540.3H805c4.4 0 8-3.6 8-8V297c0-4.4-3.6-8-8-8zM604.3 806.2c0 4.4-3.6 8-8 8h-26c-4.4 0-8-3.6-8-8V438.2c0-4.4 3.6-8 8-8h26c4.4 0 8 3.6 8 8v368zM434.3 806.2c0 4.4-3.6 8-8 8h-26c-4.4 0-8-3.6-8-8V438.2c0-4.4 3.6-8 8-8h26c4.4 0 8 3.6 8 8v368z"/></svg>
+                            删除
+                        </div>
+                    </div>
+
+                    <div class="f-row">
+                        <div class="f-label">规则类型</div>
+                        <div class="rc-group">
+                            <label class="rc-item"><input type="radio" name="rt" checked> 平台内置规则</label>
+                            <label class="rc-item"><input type="radio" name="rt"> 任务自定义规则</label>
+                            <label class="rc-item"><input type="radio" name="rt"> 全局自定义规则</label>
+                        </div>
+                    </div>
+
+                    <div class="f-row">
+                        <div class="f-label" style="display:flex;align-items:center;">
+                            规则强度 <span class="icon-help" title="强弱规则辅助说明">?</span>
+                        </div>
+                        <div class="rc-group">
+                            <label class="rc-item"><input type="radio" name="rs" checked> 强</label>
+                            <label class="rc-item"><input type="radio" name="rs"> 弱</label>
+                        </div>
+                    </div>
+
+                    <div class="f-row">
+                        <div class="f-label">计算方式</div>
+                        <div class="f-cnt">
+                            <select class="form-select" style="width: 100%;"><option>字段枚举值检测</option></select>
+                        </div>
+                    </div>
+
+                    <div class="f-row">
+                        <div class="f-label">配置方式</div>
+                        <div class="rc-group" style="padding-top:0;">
+                            <label class="rc-item"><input type="radio" name="md"> 手动输入</label>
+                            <label class="rc-item"><input type="radio" name="md" checked> 动态值</label>
+                        </div>
+                    </div>
+
+                    <!-- ★★★ 松解紧凑的高级枚举值容器 ★★★ -->
+                    <div class="f-row">
+                        <div class="f-label">枚举值</div>
+                        <div class="f-cnt">
+                            
+                            <div class="soft-container">
+                                <!-- 内层表单区开始 -->
+                                <div class="inner-row">
+                                    <div class="inner-label">数据连接</div>
+                                    <div class="inner-cnt">
+                                        <div class="inner-line">
+                                            <select class="form-select" style="flex:1;"><option>选择连接数据源</option></select>
+                                            <select class="form-select" style="flex:1;"><option>选择具体连接名称</option></select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="inner-row">
+                                    <div class="inner-label">参照表</div>
+                                    <div class="inner-cnt">
+                                        <select class="form-select" style="width: 100%;"><option>搜索 / 选择目标参照表</option></select>
+                                    </div>
+                                </div>
+
+                                <div class="inner-row" style="margin-bottom: 0;">
+                                    <div class="inner-label" style="padding-top: 8px;">参照字段</div>
+                                    <div class="inner-cnt">
+                                        <div class="inner-line">
+                                            <select class="form-select" style="width: 320px;"><option>搜索 / 选择参照字段</option></select>
+                                            <a class="text-link" style="margin-left: 8px;">预览枚举值</a>
+                                        </div>
+                                        
+                                        <!-- 高质感提示块 -->
+                                        <div class="info-block">
+                                            <svg viewBox="64 64 896 896" width="14" height="14">
+                                                <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"/><path d="M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z"/>
+                                            </svg>
+                                            <div>
+                                                系统将提取该字段的去重值作为合法枚举范围。<br>建议参照字段与上方检测字段的数据类型保持一致。
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 内层结束 -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ★★★ 松解紧凑的高级枚举值容器结束 ★★★ -->
+
+                    <div class="f-row">
+                        <div class="f-label">检测字段</div>
+                        <div class="f-cnt" style="display: flex; align-items: center; padding-top: 6px;">
+                            <a class="text-link" style="margin-left: 0;">选择</a>
+                            <span style="color: var(--text-secondary); margin-left: 12px; font-size:13px;">每张表至少选择1个字段</span>
+                        </div>
+                    </div>
+
+                    <div class="f-row">
+                        <div class="f-label">异常值处理</div>
+                        <div class="rc-group">
+                            <label class="rc-item"><input type="checkbox"> 排除空字符串</label>
+                            <label class="rc-item"><input type="checkbox"> 排除NULL值</label>
+                        </div>
+                    </div>
+
+                    <div class="f-row">
+                        <div class="f-label">计算结果</div>
+                        <div class="rc-group">
+                            <label class="rc-item"><input type="radio" name="cr" checked> 异常行数</label>
+                            <label class="rc-item"><input type="radio" name="cr"> 异常行占比</label>
+                            <label class="rc-item"><input type="radio" name="cr"> 正常行数</label>
+                            <label class="rc-item"><input type="radio" name="cr"> 正常行占比</label>
+                        </div>
+                    </div>
+
+                    <div class="f-row">
+                        <div class="f-label">预期范围</div>
+                        <div class="f-cnt">
+                            <div class="condition-bar">
+                                <div class="btn-add-cond">添加条件(且) ▾</div>
+                                <span style="color:var(--text-secondary); cursor:pointer; font-size: 13px;">清空</span>
+                            </div>
+                            
+                            <div class="condition-wrapper">
+                                <div class="c-header"><span style="color:#52c41a; font-weight:bold; margin-right:6px;">#</span> 异常行数</div>
+                                <div class="c-body">点击添加条件，设置计算结果的预期范围</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="f-row" style="margin-bottom: 0;">
+                        <div class="f-label" style="padding-top: 0;">记录异常明细</div>
+                        <div class="rc-group" style="padding-top: 0;">
+                            <label class="rc-item" style="color: var(--text-main); font-size: 13px;"><input type="checkbox"> 检测不通过时，识别并记录不在枚举范围内的值所在的完整行</label>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <button class="btn-primary">保存</button>
+    </footer>
+
+</body>
+</html>

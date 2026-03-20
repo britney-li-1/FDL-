@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据连接详情页 - 完整版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; 
+            background: #fff; /* 原图背景似乎是纯白，或者极淡的灰，这里为了干净用白色 */
+            color: #334155;
+        }
+        /* 强制最小字号 12px */
+        * { min-font-size: 12px; }
+        
+        /* 优化后的圆环组件 */
+        .donut-chart {
+            width: 100px; height: 100px; 
+            border-radius: 50%;
+            background: conic-gradient(#3b82f6 0% 76%, #f1f5f9 76% 100%);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .donut-inner {
+            width: 82px; height: 82px; 
+            background: white; border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        /* 数据信息列表的 Label 样式 */
+        .info-label { width: 100px; color: #64748b; font-size: 14px; font-weight: 500; flex-shrink: 0; }
+        .info-value { color: #334155; font-size: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    </style>
+</head>
+<body class="p-10">
+
+    <div class="max-w-[1100px] mx-auto">
+        
+        <!-- ============================================================== -->
+        <!-- 1. 顶部面包屑与标题 -->
+        <!-- ============================================================== -->
+        <div class="text-xs text-slate-400 mb-6">
+            所有数据连接 / 文件夹1 / 文件夹3 / <span class="text-slate-800 font-bold">数据连接名称1</span>
+        </div>
+
+        <div class="flex justify-between items-start mb-8">
+            <div class="flex gap-4">
+                <!-- 模拟原图的浅蓝色占位图标 -->
+                <div class="w-14 h-14 bg-blue-50/50 rounded-lg border border-blue-50"></div>
+                
+                <div>
+                    <div class="text-xs text-slate-400 mb-1">美团</div>
+                    <h1 class="text-xl font-bold text-slate-800">数据连接名称1</h1>
+                </div>
+            </div>
+            <!-- 头部按钮 -->
+            <button class="bg-blue-600 text-white px-6 py-1.5 rounded text-sm hover:bg-blue-700 transition">编辑</button>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- 2. 数据信息列表 (还原原图内容) -->
+        <!-- ============================================================== -->
+        <div class="relative mb-10">
+            <!-- 标题带下划线 -->
+            <div class="text-sm font-bold text-slate-800 pb-3 border-b border-slate-100 mb-5">数据信息</div>
+            
+            <div class="pl-2 space-y-4">
+                <div class="flex items-baseline">
+                    <div class="info-label">授权ID</div>
+                    <div class="info-value">bad22f0a2946454284b421e44a8c9e60</div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="info-label">状态</div>
+                    <div class="info-value text-slate-700 flex items-center gap-1.5 font-sans">
+                        <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        授权成功
+                    </div>
+                </div>
+                
+                <div class="flex items-baseline">
+                    <div class="info-label">授权时间</div>
+                    <div class="info-value font-sans">2023-03-02 12:10:10</div>
+                </div>
+                
+                <div class="flex items-baseline">
+                    <div class="info-label">应用ID</div>
+                    <div class="info-value">304406_xd3M3+kK3Jq+Qe8H34Sq29/LygRaWDM</div>
+                </div>
+                
+                <div class="flex items-baseline">
+                    <div class="info-label">用户名</div>
+                    <div class="info-value font-sans">xxxx</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- 3. 同步点数卡片区域 (优化后的设计) -->
+        <!-- ============================================================== -->
+        
+        <!-- 区域标题 -->
+        <div class="text-sm font-bold text-slate-800 pb-3 border-b border-slate-100 mb-6 flex items-center gap-2">
+            同步点数
+            <!-- 原图那个很细的线是 border-b，这里已经加了 -->
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6 items-stretch">
+            
+            <!-- Left Card: 当前连接用量 (优化版：去分割线/去灰盒) -->
+            <div class="flex-1 bg-white rounded-lg border border-slate-100 p-8 shadow-sm hover:shadow-md transition-shadow group flex flex-col">
+                
+                <div class="text-sm font-bold text-slate-800 mb-10">当前连接用量</div>
+                
+                <div class="flex items-center h-full pb-2">
+                    <!-- 本月 -->
+                    <div class="flex-1 pr-6 border-r border-slate-100">
+                        <div class="text-xs text-slate-400 mb-2 font-medium">本月消耗</div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-5xl font-bold text-blue-600 tracking-tight font-mono">2,874</span>
+                            <span class="text-xs text-slate-400 font-normal">点</span>
+                        </div>
+                    </div>
+                    <!-- 上月 -->
+                    <div class="w-[140px] pl-8">
+                        <div class="text-xs text-slate-400 mb-2">上月消耗</div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-bold text-slate-300 font-mono">0</span>
+                            <span class="text-xs text-slate-400">点</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Card: 同步点数总览 (优化版：聚合列表 + 千分位) -->
+            <div class="w-[480px] bg-white rounded-lg border border-slate-100 p-8 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                
+                <div class="flex justify-between items-center mb-8">
+                    <div class="flex items-center gap-2">
+                        <div class="text-sm font-bold text-slate-800">同步点数总览</div>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                </div>
+
+                <div class="flex gap-8 mb-8 items-center">
+                    <!-- 圆环 -->
+                    <div class="donut-chart shrink-0">
+                        <div class="donut-inner">
+                            <span class="text-blue-600 font-bold text-lg leading-tight">76%</span>
+                            <span class="text-xs text-slate-400">已用</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 数据列表 -->
+                    <div class="flex-1 flex flex-col justify-center space-y-5">
+                        <div class="flex justify-between items-baseline border-b border-slate-50 pb-2">
+                             <span class="text-xs text-slate-500 font-medium">剩余可用点数</span>
+                             <span class="text-xl font-bold text-blue-600 font-mono">24,000 <span class="text-xs font-normal text-slate-400">点</span></span>
+                        </div>
+                        
+                        <div class="space-y-2.5">
+                            <div class="flex items-center text-xs">
+                                <div class="w-[60px] flex items-center gap-2 text-slate-500">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> 已用
+                                </div>
+                                <div class="font-mono text-slate-700 font-medium">
+                                    76,000 <span class="text-slate-400 scale-90 inline-block font-normal">点</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center text-xs">
+                                <div class="w-[60px] flex items-center gap-2 text-slate-500">
+                                    <span class="w-2 h-2 rounded-full bg-slate-200"></span> 总量
+                                </div>
+                                <div class="font-mono text-slate-700 font-medium">
+                                    1,000,000 <span class="text-slate-400 scale-90 inline-block font-normal">点</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="w-full bg-blue-50/80 text-blue-600 py-2.5 rounded text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-100">
+                    立即购买点数
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

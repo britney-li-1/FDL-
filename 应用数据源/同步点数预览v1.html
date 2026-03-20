@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基于图片的深度优化方案</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    </style>
+</head>
+<body class="bg-[#F4F5F7] p-8 min-h-screen"> 
+<!-- 背景色调整为接近图片的灰白色 -->
+
+    <div class="max-w-[1100px] mx-auto">
+        
+        <h1 class="text-xl font-bold text-gray-800 mb-2">优化方案对比</h1>
+        <p class="text-gray-500 mb-10 text-sm">目标：保留原有风格（Icon+按钮），解决数据分散问题，并让弹窗不空洞。</p>
+
+        <!-- ====================================================================================== -->
+        <!-- 方案 A: "强调剩余"的左右分栏 (推荐) -->
+        <!-- 逻辑：模仿左侧卡片的竖线分割。左边放核心数据（剩余），右边放进度详情。 -->
+        <!-- 优点：视线非常集中，和左侧卡片形成完美的视觉对称。弹窗里展开也很自然。 -->
+        <!-- ====================================================================================== -->
+        <div class="mb-16">
+            <span class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">方案 A (视觉对称版)</span>
+            <div class="mt-4 flex flex-col lg:flex-row gap-4">
+                
+                <!-- 【左侧参照卡片】(保持原样，仅作对比) -->
+                <div class="w-full lg:w-[400px] bg-white rounded-lg p-5 shadow-sm border border-gray-100/50">
+                    <h3 class="text-sm font-bold text-gray-800 mb-6">当前连接用量</h3>
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <div class="text-xs text-gray-500 mb-1">上月消耗</div>
+                            <div class="text-2xl font-medium text-gray-500">0 <span class="text-xs">点</span></div>
+                        </div>
+                        <div class="w-px h-10 bg-gray-200 mx-4"></div>
+                        <div class="flex-1">
+                            <div class="text-xs text-gray-500 mb-1">本月消耗</div>
+                            <div class="text-2xl font-bold text-blue-600">2,874 <span class="text-xs font-normal text-gray-500">点</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 【右侧优化卡片 - 页面版】 -->
+                <div class="flex-1 bg-white rounded-lg p-5 shadow-sm border border-gray-100/50 flex flex-col justify-between">
+                    <!-- 头部：标题 + ? + 按钮 -->
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-1.5">
+                            <h3 class="text-sm font-bold text-gray-800">同步点数总览</h3>
+                            <!-- ICON -->
+                            <svg class="w-4 h-4 text-gray-400 cursor-help hover:text-gray-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                        </div>
+                        <a href="#" class="bg-blue-50 text-blue-600 px-3 py-1 rounded text-xs font-bold hover:bg-blue-100 transition">立即购买</a>
+                    </div>
+
+                    <!-- 核心内容区：左右结构，解决分散 -->
+                    <div class="flex items-end gap-6">
+                        <!-- 左：核心剩余 -->
+                        <div>
+                            <div class="text-xs text-gray-400 mb-1">剩余可用</div>
+                            <div class="text-3xl font-bold text-green-500 font-mono">24,000 <span class="text-xs text-gray-400 font-normal font-sans">点</span></div>
+                        </div>
+                        
+                        <!-- 把分散的数字聚拢在这里 -->
+                        <div class="flex-1 pb-1">
+                            <div class="flex justify-between text-xs text-gray-500 mb-1.5">
+                                <span>已用: 76,000</span>
+                                <span>总量: 100k</span>
+                            </div>
+                            <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-blue-600" style="width: 76%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+             <!-- 【右侧优化卡片 - 弹窗版】 -->
+             <!-- 这里的技巧是：因为有了左右结构，在弹窗里我们把右侧扩充为“详情列表”，这样就不空了 -->
+            <div class="mt-8 max-w-[600px]">
+                <div class="text-xs font-bold text-gray-400 mb-2 uppercase">方案 A 在弹窗中的效果：</div>
+                <div class="bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-gray-800">同步点数详情</span>
+                             <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                        </div>
+                        <span class="text-gray-300 text-xl cursor-pointer">×</span>
+                    </div>
+                    
+                    <div class="p-8">
+                        <div class="flex gap-8">
+                            <!-- 左边：依然是那个大数字，不需要变 -->
+                            <div class="w-1/3 border-r border-gray-100 pr-8">
+                                <div class="text-sm text-gray-500 mb-2">当前剩余</div>
+                                <div class="text-4xl font-bold text-green-600 font-mono tracking-tighter mb-6">24,000</div>
+                                <button class="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700 shadow-blue-100 shadow-lg">立即充值</button>
+                            </div>
+
+                            <!-- 右边：原本紧凑的进度条，这里展开详细信息，填满弹窗空间 -->
+                            <div class="flex-1 space-y-5 pt-1">
+                                <!-- 进度条 -->
+                                <div>
+                                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                        <span>当前额度使用率</span>
+                                        <span class="font-bold text-gray-700">76%</span>
+                                    </div>
+                                    <div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                        <div class="h-full bg-blue-600" style="width: 76%"></div>
+                                    </div>
+                                </div>
+                                <!-- 详情数据填充 -->
+                                <div class="grid grid-cols-2 gap-4 text-xs">
+                                    <div class="bg-gray-50 p-2.5 rounded border border-gray-100">
+                                        <div class="text-gray-400 mb-1">已使用点数</div>
+                                        <div class="font-medium text-gray-700 font-mono text-base">76,000</div>
+                                    </div>
+                                    <div class="bg-gray-50 p-2.5 rounded border border-gray-100">
+                                        <div class="text-gray-400 mb-1">套餐总容量</div>
+                                        <div class="font-medium text-gray-700 font-mono text-base">100,000</div>
+                                    </div>
+                                </div>
+                                <div class="text-[10px] text-gray-400">
+                                    * 点数包有效期至 2025-12-31，超出部分将按量计费。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================================================================================== -->
+        <!-- 方案 B: "上下层级"的聚合版 -->
+        <!-- 逻辑：保留你图片里的横向布局，但是把“余量、已用、总量”全部放在进度条上方，排成一行。 -->
+        <!-- 优点：数据不再分散在四个角，而是一眼扫过去全看完。弹窗里通过增加“历史记录”来让它不单薄。 -->
+        <!-- ====================================================================================== -->
+        <div class="mb-16 border-t border-gray-200 pt-10">
+            <span class="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">方案 B (上下聚合版)</span>
+            
+            <div class="mt-4 flex flex-col lg:flex-row gap-4">
+                 <!-- 左侧参照卡片 (略) -->
+                 <div class="hidden lg:block w-[300px] bg-white rounded-lg p-5 shadow-sm border border-gray-100/50 opacity-60 grayscale">
+                    <div class="text-center pt-8 text-gray-400">Reference Card</div>
+                </div>
+
+                <!-- 【右侧优化卡片 - 页面版】 -->
+                <div class="flex-1 bg-white rounded-lg p-5 shadow-sm border border-gray-100/50">
+                    <!-- 头部 -->
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-bold text-gray-800">同步点数总览</h3>
+                            <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                        </div>
+                        <a href="#" class="text-xs font-bold text-blue-600 hover:text-blue-700">查看明细 &rarr;</a>
+                    </div>
+
+                    <!-- 把文字全部放在进度条上方，形成清晰的信息层级 -->
+                    <div class="flex items-baseline gap-1 mb-2">
+                        <span class="text-3xl font-bold text-gray-800 font-mono">24,000</span>
+                        <span class="text-xs text-green-600 font-medium bg-green-50 px-1 rounded">剩余可用</span>
+                        <div class="flex-1 text-right text-xs text-gray-400">
+                            已用 <span class="text-gray-600 font-medium">76k</span> / 总量 <span class="text-gray-600 font-medium">100k</span>
+                        </div>
+                    </div>
+
+                    <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden relative">
+                        <!-- 蓝色进度 -->
+                        <div class="absolute top-0 left-0 h-full bg-blue-500" style="width: 76%"></div>
+                    </div>
+                    
+                    <!-- 按钮移到底部或者跟随 -->
+                    <div class="mt-4 text-right">
+                         <a href="#" class="bg-blue-50 text-blue-600 px-4 py-1.5 rounded text-xs font-bold hover:bg-blue-100 inline-block">立即购买</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 【右侧优化卡片 - 弹窗版】 -->
+            <!-- 方案B的弹窗逻辑：上半部分保持卡片样式，下半部分增加“最近消耗”，解决空洞问题 -->
+            <div class="mt-8 max-w-[600px]">
+                <div class="text-xs font-bold text-gray-400 mb-2 uppercase">方案 B 在弹窗中的效果：</div>
+                <div class="bg-white rounded-lg shadow-xl border border-gray-200">
+                    <div class="p-6 border-b border-gray-100">
+                        <!-- 复用卡片的核心样式 -->
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800">账户余额</h3>
+                                <p class="text-xs text-gray-500">套餐 ID: Plan-Premium-2024</p>
+                            </div>
+                            <span class="text-gray-300 text-xl cursor-pointer">×</span>
+                        </div>
+
+                        <div class="flex items-baseline gap-2 mb-2">
+                            <span class="text-4xl font-bold text-gray-800 font-mono">24,000</span>
+                            <span class="text-sm text-gray-500">可用点数</span>
+                        </div>
+
+                        <div class="w-full h-4 bg-gray-100 rounded-full overflow-hidden relative mb-2">
+                            <div class="absolute top-0 left-0 h-full bg-blue-600" style="width: 76%"></div>
+                            <div class="absolute top-0 right-0 h-full w-px bg-white"></div> <!-- 装饰线 -->
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500 font-mono">
+                            <span>USED: 76,000</span>
+                            <span>TOTAL: 100,000</span>
+                        </div>
+                    </div>
+
+                    <!-- 下半部分：增加内容，防止弹窗显得太“水” -->
+                    <div class="bg-gray-50 p-6 flex items-center justify-between">
+                        <div class="text-xs text-gray-500">
+                            需要更多点数？
+                            <br>
+                            <span class="text-gray-400">升级套餐以获取更多额度。</span>
+                        </div>
+                        <div class="flex gap-3">
+                            <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-50">账单记录</button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 shadow-sm">立即购买</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+
+    </div>
+
+</body>
+</html>

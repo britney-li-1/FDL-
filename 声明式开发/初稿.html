@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同连接跨库 - 逻辑表设计器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'], },
+                    colors: {
+                        ide: { bg: '#0D1117', panel: '#161B22', border: '#30363D', editor: '#010409', text: '#C9D1D9', muted: '#8B949E', primary: '#2F81F7', success: '#238636', warning: '#D29922' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #30363D; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #8B949E; }
+        .syntax-keyword { color: #FF7B72; font-weight: 500;}  
+        .syntax-func { color: #D2A8FF; }     
+        .syntax-string { color: #A5D6FF; }   
+        .syntax-db { color: #E6EDF3; } /* 数据库名高亮 */
+        .syntax-comment { color: #8B949E; font-style: italic; }
+    </style>
+</head>
+<body class="bg-ide-bg text-ide-text font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- 顶部导航 -->
+    <header class="h-14 bg-ide-panel border-b border-ide-border flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-blue-900/30 rounded flex items-center justify-center border border-blue-500/30 shadow-inner">
+                <i class="fa-solid fa-server text-blue-400"></i>
+            </div>
+            <!-- 面包屑体现层次：数据连接 -> 目标库 -> 逻辑表 -->
+            <div class="flex items-center space-x-2 text-sm">
+                <span class="text-white font-medium flex items-center">
+                    <img src="https://cdn.worldvectorlogo.com/logos/mysql-6.svg" class="w-4 h-4 mr-1.5 opacity-80" alt="mysql">
+                    生产环境 RDS (MySQL)
+                </span>
+                <i class="fa-solid fa-chevron-right text-[10px] text-ide-muted w-3"></i>
+                <span class="text-ide-muted font-medium flex items-center">
+                    <i class="fa-solid fa-database text-gray-400 mr-1.5 text-xs"></i>
+                    dw_business_logic <span class="text-[10px] ml-1 bg-gray-700 px-1 rounded">目标库</span>
+                </span>
+                <i class="fa-solid fa-chevron-right text-[10px] text-ide-muted w-3"></i>
+                <span class="text-white border border-ide-border px-2 py-0.5 rounded shadow-sm text-xs text-ide-warning font-mono bg-ide-warning/10">
+                    <i class="fa-solid fa-bolt mr-1 text-[10px]"></i>vip_daily_summary
+                </span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3 text-sm">
+            <span class="flex items-center text-ide-muted text-xs mr-2 border border-green-800/30 bg-green-900/10 px-2 py-1 rounded">
+                <div class="w-2 h-2 rounded-full bg-ide-success mr-2 animate-pulse"></div>
+                连接正常
+            </span>
+            <button class="px-3 py-1.5 text-ide-muted hover:text-white transition duration-200">
+                <i class="fa-solid fa-code-merge text-xs mr-1.5"></i> 血缘图谱
+            </button>
+            <button class="px-4 py-1.5 bg-ide-primary hover:bg-blue-600 text-white rounded-md transition duration-200 shadow-lg flex items-center">
+                <i class="fa-solid fa-play text-xs mr-1.5"></i> 运行 & 物化
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- 左侧边栏：以数据连接为根，展示多个 Database -->
+        <aside class="w-[280px] bg-ide-panel border-r border-ide-border flex flex-col shrink-0 text-sm">
+            <!-- 连接级搜索 -->
+            <div class="p-3 border-b border-ide-border">
+                <div class="bg-ide-bg border border-ide-border rounded flex items-center px-3 py-1.5 focus-within:border-ide-primary focus-within:ring-1 focus-within:ring-ide-primary transition">
+                    <i class="fa-solid fa-search text-ide-muted text-xs mr-2"></i>
+                    <input type="text" placeholder="在当前连接中搜索表..." class="bg-transparent border-none outline-none text-xs text-white w-full placeholder-ide-muted">
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-2">
+                <!-- 根节点提示 -->
+                <div class="text-[10px] font-semibold text-ide-muted uppercase tracking-wider mb-2 px-2 flex justify-between items-center">
+                    <span>Databases (同源数据库)</span>
+                    <button class="hover:text-white"><i class="fa-solid fa-rotate-right"></i></button>
+                </div>
+
+                <!-- 数据库 1: 原始数据库 -->
+                <div class="mb-3">
+                    <div class="flex items-center justify-between p-1.5 hover:bg-white/5 rounded cursor-pointer group">
+                        <div class="flex items-center space-x-2 text-gray-300 font-medium">
+                            <i class="fa-solid fa-database text-gray-400 group-hover:text-blue-400 transition"></i>
+                            <span class="truncate">ods_raw_data</span>
+                        </div>
+                        <span class="text-[9px] text-ide-muted border border-ide-border px-1 rounded group-hover:bg-ide-border">5 表</span>
+                    </div>
+                    <!-- 展开的表列表 -->
+                    <div class="pl-6 space-y-0.5 mt-0.5 text-[12px] font-mono">
+                        <div class="flex items-center p-1 hover:bg-white/5 rounded cursor-pointer text-ide-muted hover:text-white transition group">
+                            <i class="fa-regular fa-table text-gray-500 mr-2 w-3 group-hover:text-blue-400"></i> users_info
+                        </div>
+                        <div class="flex items-center p-1 hover:bg-white/5 rounded cursor-pointer text-ide-muted hover:text-white transition group">
+                            <i class="fa-regular fa-table text-gray-500 mr-2 w-3 group-hover:text-blue-400"></i> orders_raw
+                        </div>
+                        <div class="flex items-center p-1 hover:bg-white/5 rounded cursor-pointer text-ide-muted hover:text-white transition group">
+                            <i class="fa-regular fa-table text-gray-500 mr-2 w-3 group-hover:text-blue-400"></i> payment_logs
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据库 2: 逻辑数仓库 -->
+                <div>
+                    <div class="flex items-center justify-between p-1.5 hover:bg-white/5 rounded cursor-pointer shadow-sm group">
+                        <div class="flex items-center space-x-2 text-white font-medium">
+                            <i class="fa-solid fa-database text-blue-400 drop-shadow-md"></i>
+                            <span class="truncate">dw_business_logic</span>
+                        </div>
+                        <!-- 针对特定库的新建操作 -->
+                        <button class="text-[10px] bg-ide-primary/10 text-ide-primary border border-ide-primary/30 hover:bg-ide-primary hover:text-white px-1.5 py-0.5 rounded transition shadow-sm opacity-0 group-hover:opacity-100" title="在此库中新建逻辑表">
+                            <i class="fa-solid fa-plus"></i> 新建
+                        </button>
+                    </div>
+                    <div class="pl-6 space-y-0.5 mt-0.5 text-[12px] font-mono">
+                        <!-- 已有逻辑表 -->
+                        <div class="flex items-center p-1 hover:bg-white/5 rounded cursor-pointer text-ide-muted hover:text-white transition">
+                            <i class="fa-solid fa-bolt text-ide-warning/50 mr-2 w-3"></i> monthly_sales
+                        </div>
+                        <!-- 当前编辑的逻辑表 -->
+                        <div class="flex items-center p-1 bg-ide-warning/10 border border-ide-warning/30 rounded text-ide-warning font-medium shadow-sm relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-ide-warning"></div>
+                            <i class="fa-solid fa-bolt mr-2 w-3 mx-1 animate-pulse"></i> vip_daily_summary
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+        </aside>
+
+        <!-- 中间：代码编辑器 -->
+        <main class="flex-1 flex flex-col min-w-0 bg-ide-editor relative">
+            
+            <!-- 跨库提示横幅 -->
+            <div class="px-4 py-2 bg-ide-panel/80 border-b border-ide-border text-xs text-ide-muted flex items-center">
+                <i class="fa-solid fa-circle-info text-blue-400 mr-2"></i> 
+                <span>
+                    已在 <strong class="text-gray-200">生产环境 RDS</strong> 实例内。可跨库 <code class="bg-black/30 px-1 py-0.5 rounded">ods_raw_data</code> 和 <code class="bg-black/30 px-1 py-0.5 rounded">dw_business_logic</code> 关联查询。
+                </span>
+            </div>
+
+            <!-- 代码区 -->
+            <div class="flex-1 overflow-auto p-4 font-mono text-[14px] leading-relaxed relative text-gray-300">
+                <div class="absolute left-0 top-0 bottom-0 w-10 bg-ide-panel/30 border-r border-ide-border text-right py-4 pr-2 select-none text-ide-muted text-xs">
+                    1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11
+                </div>
+                <div class="ml-8 outline-none" contenteditable="true" spellcheck="false">
+<span class="syntax-keyword">CREATE OR REPLACE LOGIC TABLE</span> 
+    <span class="syntax-db bg-blue-900/30 px-1 rounded-sm border border-blue-800">dw_business_logic</span>.<span class="text-ide-warning bg-ide-warning/10 px-1 rounded-sm border border-ide-warning/30">vip_daily_summary</span> 
+<span class="syntax-keyword">AS</span>
+
+<span class="syntax-keyword">SELECT</span> 
+    u.user_id,
+    u.username,
+    <span class="syntax-func">SUM</span>(o.pay_amount) <span class="syntax-keyword">AS</span> daily_total,
+    <span class="syntax-func">COUNT</span>(o.order_id) <span class="syntax-keyword">AS</span> order_cnt
+<span class="syntax-keyword">FROM</span> <span class="syntax-db">ods_raw_data</span>.users_info u      <span class="syntax-comment">-- ← 指定不同所在的 Database</span>
+<span class="syntax-keyword">LEFT JOIN</span> <span class="syntax-db">ods_raw_data</span>.orders_raw o   <span class="syntax-comment">-- ← 同连接内跨库关联</span>
+    <span class="syntax-keyword">ON</span> u.user_id = o.user_id 
+    <span class="syntax-keyword">AND</span> DATE(o.create_time) = CURDATE()
+<span class="syntax-keyword">WHERE</span> u.status = <span class="syntax-func">1</span>
+<span class="syntax-keyword">GROUP BY</span> u.user_id, u.username;
+                </div>
+            </div>
+        </main>
+
+        <!-- 右侧：环境锁定与建表配置 -->
+        <aside class="w-[300px] bg-ide-panel border-l border-ide-border flex flex-col shrink-0">
+            <div class="px-5 py-3 border-b border-ide-border bg-ide-bg flex justify-between items-center">
+                <h2 class="text-sm font-semibold text-white flex items-center">
+                    <i class="fa-solid fa-sliders text-ide-muted mr-2"></i> 目标侧配置
+                </h2>
+                <span class="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded">属性面板</span>
+            </div>
+            
+            <div class="p-5 flex flex-col space-y-6 flex-1 overflow-y-auto">
+                
+                <!-- 1. 数据源连接 (强锁定) -->
+                <div>
+                    <label class="block text-[10px] font-semibold text-ide-muted uppercase tracking-wider mb-1.5 flex justify-between">
+                        <span>当前数据连接 (锁定)</span>
+                        <i class="fa-solid fa-lock text-gray-600"></i>
+                    </label>
+                    <div class="flex items-center bg-black/20 border border-ide-border rounded p-2 opacity-80 cursor-not-allowed">
+                        <img src="https://cdn.worldvectorlogo.com/logos/mysql-6.svg" class="w-4 h-4 mr-2 grayscale opacity-50">
+                        <span class="text-sm text-gray-400 w-full truncate">生产环境 RDS</span>
+                    </div>
+                </div>
+
+                <!-- 2. 目标数据库 (开放选择，但限于同连接下) -->
+                <div>
+                    <label class="block text-[10px] font-semibold text-ide-muted uppercase tracking-wider mb-1.5 flex justify-between">
+                        <span>目标 Database / Schema</span>
+                        <span class="text-red-400">*</span>
+                    </label>
+                    <!-- 下拉选择框 UI 模拟 -->
+                    <div class="relative group cursor-pointer">
+                        <select class="w-full bg-[#0d1017] border border-[#30363d] text-white text-sm rounded-md pl-8 pr-8 py-2 appearance-none outline-none focus:border-ide-primary focus:ring-1 focus:ring-ide-primary transition cursor-pointer">
+                            <option value="ods_raw_data">ods_raw_data (原始数据)</option>
+                            <option value="dw_business_logic" selected>dw_business_logic (逻辑输出库)</option>
+                            <option value="bi_report_db">bi_report_db (报表库)</option>
+                        </select>
+                        <i class="fa-solid fa-database absolute left-3 top-2.5 text-blue-400 text-xs pointer-events-none"></i>
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-3 text-gray-500 text-[10px] pointer-events-none group-hover:text-gray-300"></i>
+                    </div>
+                    <p class="text-[10px] text-ide-muted mt-1">控制逻辑表将被物化到当前连接的哪个库下。</p>
+                </div>
+
+                <!-- 3. 新逻辑表名称 -->
+                <div>
+                    <label class="block text-[10px] font-semibold text-ide-muted uppercase tracking-wider mb-1.5 flex justify-between">
+                        <span>逻辑表名 (Table Name)</span>
+                        <span class="text-red-400">*</span>
+                    </label>
+                    <input type="text" value="vip_daily_summary" class="w-full bg-[#0d1017] border border-ide-warning/50 text-ide-warning text-sm rounded-md px-3 py-2 outline-none focus:border-ide-warning focus:ring-1 focus:ring-ide-warning transition font-mono" />
+                </div>
+
+                <!-- 4. 物理表 / 视图选项 -->
+                <div class="pt-2 border-t border-ide-border">
+                    <label class="block text-[10px] font-semibold text-ide-muted uppercase tracking-wider mb-2">物化类型 (Materialization)</label>
+                    <div class="space-y-2 text-xs">
+                        <label class="flex items-start space-x-3 bg-ide-panel border border-ide-primary/50 rounded p-2.5 relative cursor-pointer">
+                            <input type="radio" name="build_type" checked class="mt-0.5 accent-ide-primary">
+                            <div>
+                                <span class="text-white font-medium block">实体表 (Table) + 调度更新</span>
+                                <span class="text-[10px] text-gray-400 leading-tight mt-1 space-y-1 block">
+                                    真实将数据写入到目标 Database。<br>
+                                    <span class="text-green-400 inline-flex items-center"><i class="fa-regular fa-clock mr-1"></i> T+1 定时覆盖写入开启</span>
+                                </span>
+                            </div>
+                        </label>
+                        <label class="flex items-start space-x-3 bg-ide-bg border border-ide-border rounded p-2.5 cursor-pointer hover:border-gray-500 transition">
+                            <input type="radio" name="build_type" class="mt-0.5 accent-ide-primary">
+                            <div>
+                                <span class="text-gray-300 font-medium block">视图 (View)</span>
+                                <span class="text-[10px] text-gray-500 leading-tight mt-1 block">
+                                    不存储真实数据，仅产生 SQL View 映射。
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+            
+            <!-- 底部操作区 -->
+            <div class="p-4 border-t border-ide-border bg-ide-bg flex gap-2 w-full">
+                <button class="flex-1 bg-ide-panel hover:bg-gray-700 border border-ide-border text-white text-xs font-medium py-2 rounded-md transition">
+                    取消
+                </button>
+                <button class="flex-2 w-2/3 bg-ide-primary hover:bg-blue-600 text-white text-sm font-medium py-2 rounded-md transition shadow-md flex justify-center items-center">
+                    确 认 物 化 
+                </button>
+            </div>
+        </aside>
+    </div>
+
+</body>
+</html>

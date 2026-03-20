@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B端配置项布局优化</title>
+    <style>
+        /* CSS reset & 字体预设 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
+            padding: 40px;
+            color: #333;
+        }
+
+        /* 变量定义，贴合原图色值偏向 */
+        :root {
+            --brand-color: #3b5998; /* 深蓝倾向 */
+            --primary-color: #3b66f5; /* 选中色倾向 */
+            --text-main: #303133;
+            --text-regular: #606266;
+            --text-placeholder: #909399;
+            --border-light: #ebeef5;
+            --border-base: #dcdfe6;
+            --panel-bg: #ffffff;
+        }
+
+        /* 外层主面板，模拟工作台 */
+        .config-panel {
+            background-color: var(--panel-bg);
+            border-radius: 4px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+            max-width: 1000px;
+            margin: 0 auto;
+            border: 1px solid var(--border-light);
+        }
+
+        /* 顶部 Header 折叠栏 */
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-light);
+            cursor: pointer;
+        }
+
+        .header-title-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-icon-square {
+            width: 18px;
+            height: 18px;
+            background-color: #2b3243; /* 原图深色的提示块 */
+            margin-right: 12px;
+            border-radius: 2px;
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .header-arrow svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-placeholder);
+        }
+
+        /* 面板内容区 */
+        .panel-body {
+            padding-bottom: 32px;
+        }
+
+        /* Tab 栏卡片 */
+        .tabs-header {
+            display: flex;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 24px;
+        }
+
+        .tab-item {
+            padding: 16px 20px;
+            font-size: 14px;
+            color: var(--text-regular);
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .tab-item:hover {
+            color: var(--primary-color);
+        }
+
+        .tab-item.active {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* 底部蓝色滑条效果 */
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            left: 20px;
+            right: 20px;
+            bottom: -1px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        /* 表单整体布局 */
+        .form-container {
+            padding: 0 32px;
+        }
+
+        .form-row {
+            display: flex;
+            margin-bottom: 24px;
+            align-items: flex-start; /* 考虑右侧有多行时顶部对齐 */
+        }
+
+        .form-label {
+            width: 110px;        /* 固定Label宽度，左对齐 */
+            flex-shrink: 0;
+            padding-top: 8px;    /* 与右侧输入框对齐基线 */
+            font-size: 14px;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .form-content {
+            flex: 1;
+        }
+
+        /* 下拉选择框模拟 */
+        .custom-select {
+            width: 480px;        /* 下拉框在图中未占满一行 */
+            height: 36px;
+            border: 1px solid var(--border-base);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .custom-select:hover {
+            border-color: #c0c4cc;
+        }
+
+        .select-placeholder {
+            color: var(--text-placeholder);
+            font-size: 14px;
+        }
+
+        /* ================= 核心：条件组合框 ================= */
+        .condition-group {
+            display: flex;
+            border: 1px solid var(--border-base);
+            border-radius: 4px;
+            max-width: 800px; /* 防止在宽屏下无限拉伸 */
+            background-color: #fff;
+            overflow: hidden; /* 切割圆角内溢出 */
+        }
+
+        /* 左侧 "或" 文字纵列 */
+        .condition-logic-op {
+            width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid var(--border-base);
+            font-size: 14px;
+            color: var(--text-regular);
+        }
+
+        /* 右侧条件行合集 */
+        .condition-rules-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .rule-row {
+            display: flex;
+            align-items: center;
+            height: 54px;
+            padding: 0 20px;
+            font-size: 14px;
+            color: var(--text-regular);
+        }
+
+        /* 横向上下的中间分割线 */
+        .rule-row:not(:first-child) {
+            border-top: 1px solid var(--border-base);
+        }
+
+        /* 内部数字输入框 */
+        .rule-input {
+            width: 140px;
+            height: 32px;
+            border: 1px solid var(--border-base);
+            border-radius: 4px;
+            margin: 0 12px;
+            padding: 0 12px;
+            font-size: 14px;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .rule-input:focus {
+            border-color: var(--primary-color);
+        }
+        
+        /* 移除数字输入框的上下箭头图标(更干净) */
+        .rule-input::-webkit-outer-spin-button,
+        .rule-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="config-panel">
+        <!-- 顶部展开栏区块 -->
+        <div class="panel-header">
+            <div class="header-title-group">
+                <div class="header-icon-square"></div>
+                <div class="header-title">调用定时任务</div>
+            </div>
+            <div class="header-arrow">
+                <svg viewBox="0 0 1024 1024"><path d="M840.4 300H183.6c-19.7 0-30.7 20.8-18.5 35l328.4 380.8c9.4 10.9 27.5 10.9 37 0L858.9 335c12.2-14.2 1.2-35-18.5-35z"></path></svg>
+            </div>
+        </div>
+
+        <!-- 详细内容区 -->
+        <div class="panel-body">
+            
+            <!-- Tab切换栏 -->
+            <div class="tabs-header">
+                <div class="tab-item">节点信息</div>
+                <div class="tab-item active">调用配置</div>
+            </div>
+
+            <!-- 表单内容 -->
+            <div class="form-container">
+                
+                <!-- 第一行：下拉选择框 -->
+                <div class="form-row">
+                    <div class="form-label">调用定时任务</div>
+                    <div class="form-content">
+                        <div class="custom-select">
+                            <span class="select-placeholder">请选择</span>
+                            <!-- 此处采用svg画一个通用的下拉箭头 -->
+                            <svg width="14" height="14" viewBox="0 0 1024 1024" fill="#c0c4cc"><path d="M840.4 300H183.6c-19.7 0-30.7 20.8-18.5 35l328.4 380.8c9.4 10.9 27.5 10.9 37 0L858.9 335c12.2-14.2 1.2-35-18.5-35z"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第二行：复合维度触发条件区块 -->
+                <div class="form-row">
+                    <div class="form-label">触发条件</div>
+                    <div class="form-content">
+                        
+                        <!-- 核心UI结构 -->
+                        <div class="condition-group">
+                            <!-- 纵向操作逻辑栏 -->
+                            <div class="condition-logic-op">或</div>
+                            
+                            <!-- 右侧规则组合集 -->
+                            <div class="condition-rules-wrapper">
+                                <!-- 规则条1：按数量触发 -->
+                                <div class="rule-row">
+                                    <span>数据条数达到</span>
+                                    <input type="number" class="rule-input" value="1">
+                                    <span>条后触发一次</span>
+                                </div>
+                                <!-- 规则条2：按时间触发 -->
+                                <div class="rule-row">
+                                    <span>每隔</span>
+                                    <input type="number" class="rule-input" value="1">
+                                    <span>秒触发一次</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

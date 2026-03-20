@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FineDataLink 数据平台</title>
+    <style>
+        /* ================= 原有结构样式 (保持不变) ================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* 顶部导航 */
+        .header {
+            height: 48px;
+            background-color: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 100;
+            border-bottom: 1px solid #e8e8e8;
+            flex-shrink: 0;
+        }
+        .logo-box { width: 32px; height: 32px; background: #4766e9; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; margin-right: 12px; }
+        .header-title { font-size: 16px; font-weight: 500; color: #1f1f1f; }
+
+        /* 主体布局 */
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+
+        /* 左侧一级深色导航 */
+        .sidebar-dark { width: 64px; background-color: #2b3446; display: flex; flex-direction: column; align-items: center; color: #a3b3cc; padding-top: 0; flex-shrink: 0; }
+        .nav-icon-item { width: 100%; height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 12px; gap: 6px; text-align: center; color: #8fa0bb; position: relative; }
+        .nav-icon-item:hover { color: #fff; background-color: #364055; }
+        .nav-icon-item.active { color: #fff; }
+        .nav-icon-item.active::before { content: ''; position: absolute; left: 0; top: 20px; bottom: 20px; width: 3px; background-color: #4766e9; border-radius: 0 4px 4px 0; }
+        .nav-icon-item svg { width: 24px; height: 24px; fill: currentColor; opacity: 0.9; }
+        .nav-icon-item.datageni svg { width: 28px; height: 28px; }
+
+        /* 左侧二级白色导航 */
+        .sidebar-light { width: 220px; background-color: #fff; border-right: 1px solid #e8e8e8; display: flex; flex-direction: column; overflow-y: hidden; flex-shrink: 0; user-select: none; }
+        .menu-scroll-area { flex: 1; padding: 16px 12px; overflow-y: auto; }
+        .menu-scroll-area::-webkit-scrollbar { display: none; }
+        .menu-group-header { padding: 10px 8px; display: flex; align-items: center; color: #333; font-weight: 500; cursor: pointer; font-size: 15px; border-radius: 4px; transition: background 0.2s; margin-bottom: 2px; }
+        .menu-group-header:hover { background-color: #f5f7fa; }
+        .menu-icon { margin-right: 10px; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; color: #5c6b7f; }
+        .menu-icon svg { width: 100%; height: 100%; }
+        .arrow-icon { margin-left: auto; font-size: 12px; color: #8c9bb3; width: 12px; height: 12px; line-height: 12px; text-align: center; transition: transform 0.2s ease; }
+        .menu-group-header.collapsed .arrow-icon { transform: rotate(180deg); }
+        .menu-list { list-style: none; margin-bottom: 8px; display: flex; flex-direction: column; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .menu-list.collapsed { display: none; }
+        .menu-item { padding: 9px 16px 9px 44px; cursor: pointer; color: #666; transition: all 0.2s; display: flex; align-items: center; font-size: 14px; position: relative; margin-top: 2px; border-radius: 4px; }
+        .menu-item:hover { color: #4766e9; background-color: #f8faff; }
+        .menu-item.active { color: #4766e9; font-weight: 500; background-color: #eef3fe; }
+        .menu-item-root { padding: 10px 8px; display: flex; align-items: center; color: #333; font-weight: 500; cursor: pointer; font-size: 15px; border-radius: 4px; margin-bottom: 2px; }
+        .menu-item-root:hover { background-color: #f5f7fa; }
+        .menu-item-root.active { color: #4766e9; background-color: #eef3fe; }
+        .menu-item-root .menu-icon { color: inherit; }
+        .sidebar-footer { height: 56px; display: flex; align-items: center; padding-left: 24px; cursor: pointer; color: #666; font-size: 14px; border-top: 1px solid #f0f0f0; flex-shrink: 0; }
+        .sidebar-footer:hover { color: #4766e9; }
+
+        /* 右侧内容容器 (保持布局) */
+        .content-area {
+            flex: 1;
+            background-color: #f5f6f8;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* 防止因为表格过大撑破布局 */
+        }
+
+        /* ================= 新增：表格页面样式 ================= */
+        
+        /* 白色卡片容器 */
+        .page-card {
+            background: #fff;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-radius: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        /* 标题栏 (参照图2红框) */
+        .page-header-row {
+            height: 52px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid #e8e8e8;
+            font-size: 16px;
+            font-weight: 500;
+            color: #1f1f1f;
+        }
+
+        /* 筛选栏 (参照图1) */
+        .filter-row {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            flex-wrap: wrap;
+        }
+
+        /* 组合筛选控件 Select+Input */
+        .input-group {
+            display: flex;
+            align-items: center;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #fff;
+            height: 32px;
+            transition: border-color 0.2s;
+        }
+        .input-group:hover, .input-group:focus-within {
+            border-color: #4766e9;
+        }
+        .group-select {
+            border: none;
+            background: transparent;
+            height: 100%;
+            padding: 0 8px;
+            color: #333;
+            border-right: 1px solid #e8e8e8;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+        .group-input {
+            border: none;
+            height: 100%;
+            padding: 0 10px;
+            width: 160px;
+            font-size: 14px;
+            outline: none;
+            background: transparent;
+        }
+
+        /* 纯Input控件 */
+        .single-select {
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 10px;
+            width: 140px;
+            color: #333;
+            outline: none;
+        }
+
+        /* 分割线标签 */
+        .filter-label-group {
+            display: flex;
+            align-items: center;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            height: 32px;
+            overflow: hidden;
+        }
+        .filter-label {
+            background-color: #fafafa;
+            padding: 0 10px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            color: #666;
+            border-right: 1px solid #d9d9d9;
+            font-size: 13px;
+        }
+        .filter-date-input {
+            border: none;
+            padding: 0 10px;
+            width: 200px;
+            height: 100%;
+            outline: none;
+            font-size: 13px;
+            color: #333;
+        }
+
+        /* 筛选栏右侧按钮 */
+        .filter-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 16px;
+        }
+        .text-btn {
+            color: #4766e9;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .text-btn:hover { opacity: 0.8; }
+
+        /* 下拉多选样式 */
+        .filter-dropdown {
+            position: relative;
+            height: 32px;
+        }
+        .filter-dropdown-trigger {
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 10px;
+            background: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 120px;
+            font-size: 14px;
+            color: #333;
+        }
+        .filter-dropdown-trigger:hover {
+            border-color: #4766e9;
+        }
+        .filter-dropdown-trigger .arrow {
+            margin-left: 8px;
+            font-size: 12px;
+            color: #999;
+            transition: transform 0.2s;
+        }
+        .filter-dropdown.open .filter-dropdown-trigger .arrow {
+            transform: rotate(180deg);
+        }
+        .filter-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 4px;
+            background: #fff;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 160px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+        .filter-dropdown.open .filter-dropdown-menu {
+            display: block;
+        }
+        .filter-dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #333;
+        }
+        .filter-dropdown-item:hover {
+            background-color: #f5f7fa;
+        }
+        .filter-dropdown-item input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        .filter-dropdown-item label {
+            cursor: pointer;
+            flex: 1;
+            margin: 0;
+        }
+        
+        /* 日期筛选框 */
+        .date-filter {
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 10px;
+            width: 200px;
+            font-size: 14px;
+            outline: none;
+            color: #333;
+        }
+        .date-filter:hover, .date-filter:focus {
+            border-color: #4766e9;
+        }
+
+        /* 表格容器 */
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+
+        /* 表格样式 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1400px; /* 保证表格有横向滚动条 */
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background-color: #f7f8fa; /* 浅灰表头 */
+            color: #1f1f1f;
+            font-weight: 500;
+            border-bottom: 1px solid #e8e8e8;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .data-table td {
+            text-align: left;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e8e8e8;
+            color: #333;
+            font-size: 14px;
+            white-space: nowrap;
+            background-color: #fff; /* 必须给背景色，否则冻结列透明 */
+        }
+        
+        /* 备注列特殊处理，允许文本省略 */
+        .data-table td.remark-column {
+            white-space: normal;
+            max-width: 200px;
+        }
+
+        .data-table tbody tr:hover td {
+            background-color: #f0f7ff; /* 悬停浅蓝 */
+        }
+
+        /* 冻结列样式 */
+        .col-fixed-right-2 {
+            position: sticky;
+            right: 120px; /* 操作列宽度 */
+            z-index: 5;
+            border-left: 1px solid #e8e8e8;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+            background-color: #fff;
+        }
+        .col-fixed-right-1 {
+            position: sticky;
+            right: 0;
+            background-color: #fff;
+            z-index: 5;
+            width: 120px;
+            text-align: center !important; 
+        }
+
+        /* 表头冻结层级提升 */
+        .data-table th.col-fixed-right-2,
+        .data-table th.col-fixed-right-1 {
+            z-index: 15;
+            background-color: #f7f8fa;
+        }
+        
+        /* 状态标签圆点 */
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .status-wait { color: #faad14; } .status-wait .status-dot { background: #faad14; }
+        .status-process { color: #1890ff; } .status-process .status-dot { background: #1890ff; }
+        .status-done { color: #52c41a; } .status-done .status-dot { background: #52c41a; }
+        .status-ignore { color: #999; } .status-ignore .status-dot { background: #999; }
+
+        /* 规则强度标签 */
+        .strength-tag {
+            font-size: 12px;
+            padding: 1px 5px;
+            border-radius: 2px;
+            border: 1px solid;
+            transform: scale(0.9);
+            display: inline-block;
+        }
+        .tag-strong { color: #ff4d4f; border-color: #ff4d4f; }
+        .tag-weak { color: #faad14; border-color: #faad14; }
+        .tag-none { color: #ccc; border: none; }
+
+        /* 备注编辑图标 */
+        .remark-cell {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            max-width: 200px;
+        }
+        .remark-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            cursor: default;
+        }
+        
+        /* 备注tooltip */
+        .remark-text[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            background: rgba(0,0,0,0.75);
+            color: #fff;
+            font-size: 12px;
+            white-space: normal;
+            max-width: 300px;
+            word-wrap: break-word;
+            border-radius: 4px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .remark-text[data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 10px;
+            margin-bottom: 4px;
+            border: 4px solid transparent;
+            border-top-color: rgba(0,0,0,0.75);
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .edit-icon {
+            color: #4766e9;
+            cursor: pointer;
+            font-size: 14px;
+            flex-shrink: 0;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .edit-icon:hover { opacity: 1; }
+        
+        /* 备注编辑气泡 */
+        .remark-popover {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+            background: #fff;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            padding: 12px;
+            z-index: 1000;
+            min-width: 300px;
+            display: none;
+        }
+        .remark-popover.show { display: block; }
+        .remark-popover textarea {
+            width: 100%;
+            min-height: 80px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 14px;
+            resize: vertical;
+            outline: none;
+        }
+        .remark-popover textarea:focus {
+            border-color: #4766e9;
+        }
+        .remark-popover-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .popover-btn {
+            padding: 4px 16px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            background: #fff;
+        }
+        .popover-btn.primary {
+            background: #4766e9;
+            color: #fff;
+            border-color: #4766e9;
+        }
+        .popover-btn:hover {
+            opacity: 0.8;
+        }
+        
+        /* 状态列可点击 */
+        .status-badge {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        /* 状态修改弹窗 */
+        .status-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .status-modal.show { display: flex; }
+        .status-modal-content {
+            background: #fff;
+            border-radius: 4px;
+            width: 500px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .status-modal-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        .status-modal-form-item {
+            margin-bottom: 20px;
+        }
+        .status-modal-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+        .status-modal-select {
+            width: 100%;
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 10px;
+            font-size: 14px;
+            outline: none;
+        }
+        .status-modal-select:focus {
+            border-color: #4766e9;
+        }
+        .status-modal-textarea {
+            width: 100%;
+            min-height: 100px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 14px;
+            resize: vertical;
+            outline: none;
+        }
+        .status-modal-textarea:focus {
+            border-color: #4766e9;
+        }
+        .status-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 24px;
+        }
+        .modal-btn {
+            padding: 6px 20px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            background: #fff;
+        }
+        .modal-btn.primary {
+            background: #4766e9;
+            color: #fff;
+            border-color: #4766e9;
+        }
+        .modal-btn:hover {
+            opacity: 0.8;
+        }
+        
+        /* 操作列图标按钮 */
+        .action-icons {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .action-icon {
+            cursor: pointer;
+            color: #4766e9;
+            font-size: 16px;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+        }
+        .action-icon.delete { color: #ff4d4f; }
+        .action-icon:hover { opacity: 0.8; }
+        
+        /* Tooltip */
+        .action-icon[data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 8px;
+            padding: 4px 8px;
+            background: rgba(0,0,0,0.75);
+            color: #fff;
+            font-size: 12px;
+            white-space: nowrap;
+            border-radius: 4px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 9999;
+        }
+        .action-icon[data-tooltip]::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 4px;
+            border: 4px solid transparent;
+            border-top-color: rgba(0,0,0,0.75);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 9999;
+        }
+        .action-icon[data-tooltip]:hover::after,
+        .action-icon[data-tooltip]:hover::before {
+            opacity: 1;
+        }
+
+        /* 操作按钮 */
+        .action-link {
+            color: #4766e9;
+            cursor: pointer;
+            text-decoration: none;
+            margin: 0 4px;
+        }
+        .action-link.delete { color: #ff4d4f; }
+        .action-link:hover { opacity: 0.8; }
+
+        /* 底部分页栏 */
+        .pagination-footer {
+            height: 48px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 20px;
+            background: #fff;
+            gap: 12px;
+            font-size: 14px;
+        }
+        .page-num {
+            min-width: 28px;
+            height: 28px;
+            line-height: 26px;
+            text-align: center;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 2px;
+        }
+        .page-num.active {
+            border-color: #4766e9;
+            color: #4766e9;
+        }
+        
+        /* 状态筛选按钮行 */
+        .status-filter-row {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            flex-wrap: wrap;
+        }
+        .status-filter-row .reset-btn {
+            margin-left: auto;
+        }
+        .status-filter-btn {
+            padding: 6px 16px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .status-filter-btn:hover {
+            border-color: #4766e9;
+            color: #4766e9;
+        }
+        .status-filter-btn.active {
+            background: #4766e9;
+            border-color: #4766e9;
+            color: #fff;
+        }
+        .status-filter-btn .count {
+            font-weight: 500;
+        }
+        .status-filter-btn.active .count {
+            color: #fff;
+        }
+        .status-filter-btn:not(.active) .count.success {
+            color: #52c41a;
+        }
+        .status-filter-btn:not(.active) .count.failed {
+            color: #ff4d4f;
+        }
+        .status-filter-btn:not(.active) .count.warning {
+            color: #faad14;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部 -->
+    <header class="header">
+        <div class="logo-box">
+             <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
+        </div>
+        <span class="header-title">FineDataLink 数据平台</span>
+    </header>
+
+    <div class="main-container">
+        <!-- 左侧一级深色导航 -->
+        <div class="sidebar-dark">
+            <div class="nav-icon-item active" onclick="switchNav(this)">
+                <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                <span>运维中心</span>
+            </div>
+            <div class="nav-icon-item" onclick="switchNav(this)">
+                <svg viewBox="0 0 24 24"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44a1.006 1.006 0 0 1-1.14 0l-7.9-4.44A1 1 0 0 1 3 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.32-.18.71-.18 1.03 0l7.9 4.44c.32.18.53.5.53.88v9zM12 4.15L6.04 7.5 12 10.85l5.96-3.35L12 4.15zM5 15.91l6 3.38v-6.71L5 9.21v6.7zM13 19.29l6-3.38V9.21l-6 3.38v6.7z"/></svg> 
+                <span>数据管道</span>
+            </div>
+            <div class="nav-icon-item" onclick="switchNav(this)">
+                <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/><path d="M2 4v16h20V4H2zm18 14H4V6h16v12z" opacity=".3"/></svg>
+                <span>数据开发</span>
+            </div>
+            <div class="nav-icon-item" onclick="switchNav(this)">
+                <svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M6 18l6-12 6 12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                <span>数据服务</span>
+            </div>
+            <div class="nav-icon-item" onclick="switchNav(this)">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                <span>数据管理</span>
+            </div>
+            <div class="nav-icon-item datageni" onclick="switchNav(this)">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2 15h-4v-2h4v2zm1-4h-6V7h6v6z" fill-rule="evenodd"/></svg>
+                <span>DataGeni</span>
+            </div>
+            <div style="flex: 1;"></div>
+            <div class="nav-icon-item" onclick="switchNav(this)">
+                <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                <span>管理系统</span>
+            </div>
+            <div class="nav-icon-item" onclick="switchNav(this)">
+                <svg viewBox="0 0 24 24"><path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14zM6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"/></svg>
+                <span>回收站</span>
+            </div>
+        </div>
+
+        <!-- 左侧二级白色导航 -->
+        <div class="sidebar-light">
+            <div class="menu-scroll-area">
+                <div class="menu-item-root selectable" onclick="selectItem(this)">
+                     <span class="menu-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                           <path d="M11 2v9h9c0-4.97-4.03-9-9-9z" fill="#34c759"/>
+                           <path d="M11 13v9c4.97 0 9-4.03 9-9h-9z" fill="#ff9500"/>
+                           <path d="M9 13H0c0 4.97 4.03 9 9 9v-9z" fill="#ff3b30"/>
+                           <path d="M9 11V2C4.03 2 0 6.03 0 11h9z" fill="#007aff"/>
+                        </svg>
+                    </span>
+                    <span>运维概览</span>
+                </div>
+
+                <div class="menu-group-header" onclick="toggleMenu(this)">
+                    <span class="menu-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    </span>
+                    <span>定时任务</span>
+                    <span class="arrow-icon">▲</span>
+                </div>
+                <div class="menu-list">
+                    <div class="menu-item selectable" onclick="selectItem(this)">运行记录</div>
+                    <div class="menu-item selectable" onclick="selectItem(this)">调度计划</div>
+                    <div class="menu-item selectable" onclick="selectItem(this)">任务管理</div>
+                </div>
+
+                <div class="menu-group-header collapsed" onclick="toggleMenu(this)">
+                    <span class="menu-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                    </span>
+                    <span>实时任务</span>
+                    <span class="arrow-icon">▲</span>
+                </div>
+                <div class="menu-list collapsed">
+                    <div class="menu-item selectable" onclick="selectItem(this)">任务管理</div>
+                </div>
+
+                <div class="menu-group-header collapsed" onclick="toggleMenu(this)">
+                     <span class="menu-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></svg>
+                    </span>
+                    <span>实时管道</span>
+                    <span class="arrow-icon">▲</span>
+                </div>
+                <div class="menu-list collapsed">
+                    <div class="menu-item selectable" onclick="selectItem(this)">运行记录</div>
+                    <div class="menu-item selectable" onclick="selectItem(this)">任务管理</div>
+                </div>
+
+                 <div class="menu-group-header collapsed" onclick="toggleMenu(this)">
+                    <span class="menu-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                   </span>
+                   <span>定时管道</span>
+                   <span class="arrow-icon">▲</span>
+               </div>
+               <div class="menu-list collapsed">
+                   <div class="menu-item selectable" onclick="selectItem(this)">运行记录</div>
+                   <div class="menu-item selectable" onclick="selectItem(this)">任务管理</div>
+               </div>
+
+                 <div class="menu-group-header collapsed" onclick="toggleMenu(this)">
+                    <span class="menu-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    </span>
+                    <span>数据服务</span>
+                    <span class="arrow-icon">▲</span>
+                </div>
+                <div class="menu-list collapsed">
+                    <div class="menu-item selectable" onclick="selectItem(this)">服务监控</div>
+                    <div class="menu-item selectable" onclick="selectItem(this)">服务管理</div>
+                </div>
+
+                <div class="menu-group-header" onclick="toggleMenu(this)">
+                    <span class="menu-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </span>
+                    <span>检测任务</span>
+                    <span class="arrow-icon">▲</span>
+                </div>
+                <div class="menu-list">
+                    <div class="menu-item selectable" onclick="selectItem(this)">运行记录</div>
+                    <div class="menu-item selectable" onclick="selectItem(this)">任务管理</div>
+                    <div class="menu-item selectable active" onclick="selectItem(this)">问题清单</div>
+                    <div class="menu-item selectable" onclick="selectItem(this)">规则对象</div>
+                </div>
+
+            </div>
+
+            <div class="sidebar-footer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+                <span>收起</span>
+            </div>
+        </div>
+
+        <!-- ================= 右侧内容：问题清单 ================= -->
+        <div class="content-area">
+            <div class="page-card">
+                <!-- 标题行 -->
+                <div class="page-header-row">
+                    问题清单
+                </div>
+
+                <!-- 状态筛选按钮行 -->
+                <div class="status-filter-row">
+                    <div class="status-filter-btn active" onclick="filterByStatus('all')" id="status-filter-all">
+                        <span>全部</span>
+                        <span class="count" id="count-all">4</span>
+                    </div>
+                    <div class="status-filter-btn" onclick="filterByStatus('待处理')" id="status-filter-wait">
+                        <span>待处理</span>
+                        <span class="count" id="count-wait">1</span>
+                    </div>
+                    <div class="status-filter-btn" onclick="filterByStatus('处理中')" id="status-filter-process">
+                        <span>处理中</span>
+                        <span class="count" id="count-process">1</span>
+                    </div>
+                    <div class="status-filter-btn" onclick="filterByStatus('已处理')" id="status-filter-done">
+                        <span>已处理</span>
+                        <span class="count success" id="count-done">1</span>
+                    </div>
+                    <div class="status-filter-btn" onclick="filterByStatus('已忽略')" id="status-filter-ignore">
+                        <span>已忽略</span>
+                        <span class="count warning" id="count-ignore">1</span>
+                    </div>
+                    <div class="text-btn reset-btn" onclick="resetFilters()">重置</div>
+                </div>
+
+                <!-- 筛选栏 -->
+                <div class="filter-row">
+                    <!-- 组合查询：检测表、检测对象、规则名称、问题备注 -->
+                    <div class="input-group">
+                        <select class="group-select" id="searchType">
+                            <option value="检测表">检测表</option>
+                            <option value="检测对象">检测对象</option>
+                            <option value="规则名称">规则名称</option>
+                            <option value="问题备注">问题备注</option>
+                        </select>
+                        <input type="text" class="group-input" id="searchInput" placeholder="请输入" oninput="handleSearch()">
+                    </div>
+
+                    <!-- 规则强度下拉多选 -->
+                    <div class="filter-dropdown" id="strengthDropdown">
+                        <div class="filter-dropdown-trigger" onclick="toggleDropdown('strengthDropdown')">
+                            <span id="strengthText">规则强度</span>
+                            <span class="arrow">▼</span>
+                        </div>
+                        <div class="filter-dropdown-menu">
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="strength-all" value="all" onchange="handleStrengthChange('all')" checked>
+                                <label for="strength-all">全部</label>
+                            </div>
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="strength-strong" value="强规则" onchange="handleStrengthChange('strong')">
+                                <label for="strength-strong">强规则</label>
+                            </div>
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="strength-weak" value="弱规则" onchange="handleStrengthChange('weak')">
+                                <label for="strength-weak">弱规则</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 规则类型下拉多选 -->
+                    <div class="filter-dropdown" id="typeDropdown">
+                        <div class="filter-dropdown-trigger" onclick="toggleDropdown('typeDropdown')">
+                            <span id="typeText">规则类型</span>
+                            <span class="arrow">▼</span>
+                        </div>
+                        <div class="filter-dropdown-menu">
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="type-all" value="all" onchange="handleTypeChange('all')" checked>
+                                <label for="type-all">全部</label>
+                            </div>
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="type-unique" value="唯一性" onchange="handleTypeChange('unique')">
+                                <label for="type-unique">唯一性</label>
+                            </div>
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="type-integrity" value="完整性" onchange="handleTypeChange('integrity')">
+                                <label for="type-integrity">完整性</label>
+                            </div>
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="type-validity" value="有效性" onchange="handleTypeChange('validity')">
+                                <label for="type-validity">有效性</label>
+                            </div>
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="type-consistency" value="一致性" onchange="handleTypeChange('consistency')">
+                                <label for="type-consistency">一致性</label>
+                            </div>
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="type-accuracy" value="准确性" onchange="handleTypeChange('accuracy')">
+                                <label for="type-accuracy">准确性</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 问题生成时间日期筛选 -->
+                    <div class="filter-label-group">
+                        <div class="filter-label">问题生成时间</div>
+                        <input type="date" class="date-filter" id="dateFilter">
+                    </div>
+                </div>
+
+                <!-- 表格区域 -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>问题ID</th>
+                                <th>问题来源</th>
+                                <th>检测表</th>
+                                <th>检测对象</th>
+                                <th>规则名称</th>
+                                <th>规则强度</th>
+                                <th>规则类型</th>
+                                <th>问题生成时间</th>
+                                <th>问题备注</th>
+                                <th>修改记录</th>
+                                <!-- 右侧冻结列 -->
+                                <th class="col-fixed-right-2">问题状态</th>
+                                <th class="col-fixed-right-1">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 数据行 1：内部问题 -->
+                            <tr>
+                                <td>100342</td>
+                                <td>内部问题</td>
+                                <td>dim_customer_info</td>
+                                <td>customer_id</td>
+                                <td>主键空值检测</td>
+                                <td><span class="strength-tag tag-strong">强</span></td>
+                                <td>完整性</td>
+                                <td>2026-01-06 14:20:00</td>
+                                <td class="remark-column">
+                                    <div class="remark-cell">
+                                        <span class="remark-text">--</span>
+                                        <span class="edit-icon" onclick="openRemarkEdit(event, '100342')">✎</span>
+                                        <div class="remark-popover" id="remark-popover-100342">
+                                            <textarea placeholder="请输入备注"></textarea>
+                                            <div class="remark-popover-actions">
+                                                <button class="popover-btn" onclick="closeRemarkEdit('100342')">取消</button>
+                                                <button class="popover-btn primary" onclick="saveRemark('100342')">确定</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="action-link">查看</span></td>
+                                <!-- 冻结列内容 -->
+                                <td class="col-fixed-right-2">
+                                    <div class="status-badge status-wait" onclick="openStatusModal('100342', '待处理', event)">
+                                        <span class="status-dot"></span>待处理
+                                    </div>
+                                </td>
+                                <td class="col-fixed-right-1">
+                                    <div class="action-icons">
+                                        <span class="action-icon" data-tooltip="运行详情" onclick="viewDetail('100342')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon" data-tooltip="重新检测" onclick="recheck('100342')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon delete" data-tooltip="删除" onclick="deleteItem('100342')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- 数据行 2：外部问题 -->
+                            <tr>
+                                <td>100341</td>
+                                <td>外部问题</td>
+                                <td>ods_sales_order</td>
+                                <td>order_status</td>
+                                <td>外部源数据异常</td>
+                                <td><span class="strength-tag tag-none">--</span></td>
+                                <td>--</td>
+                                <td>2026-01-06 12:15:22</td>
+                                <td class="remark-column">
+                                    <div class="remark-cell">
+                                        <span class="remark-text">需联系业务方确认数据源异常情况，并协调处理相关数据质量问题</span>
+                                        <span class="edit-icon" onclick="openRemarkEdit(event, '100341')">✎</span>
+                                        <div class="remark-popover" id="remark-popover-100341">
+                                            <textarea placeholder="请输入备注">需联系业务方确认数据源异常情况，并协调处理相关数据质量问题</textarea>
+                                            <div class="remark-popover-actions">
+                                                <button class="popover-btn" onclick="closeRemarkEdit('100341')">取消</button>
+                                                <button class="popover-btn primary" onclick="saveRemark('100341')">确定</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="col-fixed-right-2">
+                                    <div class="status-badge status-process" onclick="openStatusModal('100341', '处理中', event)">
+                                        <span class="status-dot"></span>处理中
+                                    </div>
+                                </td>
+                                <td class="col-fixed-right-1">
+                                    <div class="action-icons">
+                                        <span class="action-icon" data-tooltip="运行详情" onclick="viewDetail('100341')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon" data-tooltip="重新检测" onclick="recheck('100341')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon delete" data-tooltip="删除" onclick="deleteItem('100341')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- 数据行 3：字段级规则 -->
+                            <tr>
+                                <td>100340</td>
+                                <td>内部问题</td>
+                                <td>dwd_fact_payment</td>
+                                <td>pay_amount</td>
+                                <td>负值检测</td>
+                                <td><span class="strength-tag tag-weak">弱</span></td>
+                                <td>准确性</td>
+                                <td>2026-01-05 18:00:10</td>
+                                <td class="remark-column">
+                                    <div class="remark-cell">
+                                        <span class="remark-text">冲正数据，已忽略</span>
+                                        <span class="edit-icon" onclick="openRemarkEdit(event, '100340')">✎</span>
+                                        <div class="remark-popover" id="remark-popover-100340">
+                                            <textarea placeholder="请输入备注">冲正数据，已忽略</textarea>
+                                            <div class="remark-popover-actions">
+                                                <button class="popover-btn" onclick="closeRemarkEdit('100340')">取消</button>
+                                                <button class="popover-btn primary" onclick="saveRemark('100340')">确定</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="col-fixed-right-2">
+                                    <div class="status-badge status-ignore" onclick="openStatusModal('100340', '已忽略', event)">
+                                        <span class="status-dot"></span>已忽略
+                                    </div>
+                                </td>
+                                <td class="col-fixed-right-1">
+                                    <div class="action-icons">
+                                        <span class="action-icon" data-tooltip="运行详情" onclick="viewDetail('100340')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon" data-tooltip="重新检测" onclick="recheck('100340')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon delete" data-tooltip="删除" onclick="deleteItem('100340')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- 数据行 4：表级规则 -->
+                            <tr>
+                                <td>100339</td>
+                                <td>内部问题</td>
+                                <td>ads_daily_report</td>
+                                <td>ads_daily_report</td>
+                                <td>表波动率检测</td>
+                                <td><span class="strength-tag tag-strong">强</span></td>
+                                <td>一致性</td>
+                                <td>2026-01-05 09:00:00</td>
+                                <td class="remark-column">
+                                    <div class="remark-cell">
+                                        <span class="remark-text">已确认正常</span>
+                                        <span class="edit-icon" onclick="openRemarkEdit(event, '100339')">✎</span>
+                                        <div class="remark-popover" id="remark-popover-100339">
+                                            <textarea placeholder="请输入备注">已确认正常</textarea>
+                                            <div class="remark-popover-actions">
+                                                <button class="popover-btn" onclick="closeRemarkEdit('100339')">取消</button>
+                                                <button class="popover-btn primary" onclick="saveRemark('100339')">确定</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="col-fixed-right-2">
+                                    <div class="status-badge status-done" onclick="openStatusModal('100339', '已处理', event)">
+                                        <span class="status-dot"></span>已处理
+                                    </div>
+                                </td>
+                                <td class="col-fixed-right-1">
+                                    <div class="action-icons">
+                                        <span class="action-icon" data-tooltip="运行详情" onclick="viewDetail('100339')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon" data-tooltip="重新检测" onclick="recheck('100339')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon delete" data-tooltip="删除" onclick="deleteItem('100339')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- 数据行 5：唯一性规则 -->
+                            <tr>
+                                <td>100338</td>
+                                <td>内部问题</td>
+                                <td>dim_product_info</td>
+                                <td>product_code</td>
+                                <td>唯一性检测</td>
+                                <td><span class="strength-tag tag-strong">强</span></td>
+                                <td>唯一性</td>
+                                <td>2026-01-04 16:30:15</td>
+                                <td class="remark-column">
+                                    <div class="remark-cell">
+                                        <span class="remark-text">--</span>
+                                        <span class="edit-icon" onclick="openRemarkEdit(event, '100338')">✎</span>
+                                        <div class="remark-popover" id="remark-popover-100338">
+                                            <textarea placeholder="请输入备注"></textarea>
+                                            <div class="remark-popover-actions">
+                                                <button class="popover-btn" onclick="closeRemarkEdit('100338')">取消</button>
+                                                <button class="popover-btn primary" onclick="saveRemark('100338')">确定</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="col-fixed-right-2">
+                                    <div class="status-badge status-wait" onclick="openStatusModal('100338', '待处理', event)">
+                                        <span class="status-dot"></span>待处理
+                                    </div>
+                                </td>
+                                <td class="col-fixed-right-1">
+                                    <div class="action-icons">
+                                        <span class="action-icon" data-tooltip="运行详情" onclick="viewDetail('100338')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon" data-tooltip="重新检测" onclick="recheck('100338')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon delete" data-tooltip="删除" onclick="deleteItem('100338')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- 数据行 6：外部问题 -->
+                            <tr>
+                                <td>100337</td>
+                                <td>外部问题</td>
+                                <td>ods_user_behavior</td>
+                                <td>user_id</td>
+                                <td>外部数据缺失</td>
+                                <td><span class="strength-tag tag-none">--</span></td>
+                                <td>--</td>
+                                <td>2026-01-04 10:20:30</td>
+                                <td class="remark-column">
+                                    <div class="remark-cell">
+                                        <span class="remark-text">数据源异常</span>
+                                        <span class="edit-icon" onclick="openRemarkEdit(event, '100337')">✎</span>
+                                        <div class="remark-popover" id="remark-popover-100337">
+                                            <textarea placeholder="请输入备注">数据源异常</textarea>
+                                            <div class="remark-popover-actions">
+                                                <button class="popover-btn" onclick="closeRemarkEdit('100337')">取消</button>
+                                                <button class="popover-btn primary" onclick="saveRemark('100337')">确定</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="col-fixed-right-2">
+                                    <div class="status-badge status-process" onclick="openStatusModal('100337', '处理中', event)">
+                                        <span class="status-dot"></span>处理中
+                                    </div>
+                                </td>
+                                <td class="col-fixed-right-1">
+                                    <div class="action-icons">
+                                        <span class="action-icon" data-tooltip="运行详情" onclick="viewDetail('100337')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon" data-tooltip="重新检测" onclick="recheck('100337')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon delete" data-tooltip="删除" onclick="deleteItem('100337')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- 数据行 7：完整性规则 -->
+                            <tr>
+                                <td>100336</td>
+                                <td>内部问题</td>
+                                <td>dwd_order_detail</td>
+                                <td>order_id</td>
+                                <td>必填字段检测</td>
+                                <td><span class="strength-tag tag-strong">强</span></td>
+                                <td>完整性</td>
+                                <td>2026-01-03 15:45:20</td>
+                                <td class="remark-column">
+                                    <div class="remark-cell">
+                                        <span class="remark-text">--</span>
+                                        <span class="edit-icon" onclick="openRemarkEdit(event, '100336')">✎</span>
+                                        <div class="remark-popover" id="remark-popover-100336">
+                                            <textarea placeholder="请输入备注"></textarea>
+                                            <div class="remark-popover-actions">
+                                                <button class="popover-btn" onclick="closeRemarkEdit('100336')">取消</button>
+                                                <button class="popover-btn primary" onclick="saveRemark('100336')">确定</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="col-fixed-right-2">
+                                    <div class="status-badge status-done" onclick="openStatusModal('100336', '已处理', event)">
+                                        <span class="status-dot"></span>已处理
+                                    </div>
+                                </td>
+                                <td class="col-fixed-right-1">
+                                    <div class="action-icons">
+                                        <span class="action-icon" data-tooltip="运行详情" onclick="viewDetail('100336')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon" data-tooltip="重新检测" onclick="recheck('100336')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon delete" data-tooltip="删除" onclick="deleteItem('100336')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- 数据行 8：一致性规则 -->
+                            <tr>
+                                <td>100335</td>
+                                <td>内部问题</td>
+                                <td>ads_monthly_summary</td>
+                                <td>ads_monthly_summary</td>
+                                <td>数据一致性检测</td>
+                                <td><span class="strength-tag tag-weak">弱</span></td>
+                                <td>一致性</td>
+                                <td>2026-01-02 11:30:45</td>
+                                <td class="remark-column">
+                                    <div class="remark-cell">
+                                        <span class="remark-text">月度汇总正常</span>
+                                        <span class="edit-icon" onclick="openRemarkEdit(event, '100335')">✎</span>
+                                        <div class="remark-popover" id="remark-popover-100335">
+                                            <textarea placeholder="请输入备注">月度汇总正常</textarea>
+                                            <div class="remark-popover-actions">
+                                                <button class="popover-btn" onclick="closeRemarkEdit('100335')">取消</button>
+                                                <button class="popover-btn primary" onclick="saveRemark('100335')">确定</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="col-fixed-right-2">
+                                    <div class="status-badge status-done" onclick="openStatusModal('100335', '已处理', event)">
+                                        <span class="status-dot"></span>已处理
+                                    </div>
+                                </td>
+                                <td class="col-fixed-right-1">
+                                    <div class="action-icons">
+                                        <span class="action-icon" data-tooltip="运行详情" onclick="viewDetail('100335')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon" data-tooltip="重新检测" onclick="recheck('100335')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon delete" data-tooltip="删除" onclick="deleteItem('100335')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- 数据行 9：有效性规则 -->
+                            <tr>
+                                <td>100334</td>
+                                <td>内部问题</td>
+                                <td>dwd_user_profile</td>
+                                <td>email</td>
+                                <td>邮箱格式检测</td>
+                                <td><span class="strength-tag tag-weak">弱</span></td>
+                                <td>有效性</td>
+                                <td>2026-01-01 09:15:30</td>
+                                <td class="remark-column">
+                                    <div class="remark-cell">
+                                        <span class="remark-text">格式错误数据</span>
+                                        <span class="edit-icon" onclick="openRemarkEdit(event, '100334')">✎</span>
+                                        <div class="remark-popover" id="remark-popover-100334">
+                                            <textarea placeholder="请输入备注">格式错误数据</textarea>
+                                            <div class="remark-popover-actions">
+                                                <button class="popover-btn" onclick="closeRemarkEdit('100334')">取消</button>
+                                                <button class="popover-btn primary" onclick="saveRemark('100334')">确定</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="col-fixed-right-2">
+                                    <div class="status-badge status-ignore" onclick="openStatusModal('100334', '已忽略', event)">
+                                        <span class="status-dot"></span>已忽略
+                                    </div>
+                                </td>
+                                <td class="col-fixed-right-1">
+                                    <div class="action-icons">
+                                        <span class="action-icon" data-tooltip="运行详情" onclick="viewDetail('100334')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon" data-tooltip="重新检测" onclick="recheck('100334')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon delete" data-tooltip="删除" onclick="deleteItem('100334')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- 数据行 10：准确性规则 -->
+                            <tr>
+                                <td>100333</td>
+                                <td>内部问题</td>
+                                <td>dwd_transaction</td>
+                                <td>amount</td>
+                                <td>金额范围检测</td>
+                                <td><span class="strength-tag tag-strong">强</span></td>
+                                <td>准确性</td>
+                                <td>2025-12-31 14:20:10</td>
+                                <td class="remark-column">
+                                    <div class="remark-cell">
+                                        <span class="remark-text">--</span>
+                                        <span class="edit-icon" onclick="openRemarkEdit(event, '100333')">✎</span>
+                                        <div class="remark-popover" id="remark-popover-100333">
+                                            <textarea placeholder="请输入备注"></textarea>
+                                            <div class="remark-popover-actions">
+                                                <button class="popover-btn" onclick="closeRemarkEdit('100333')">取消</button>
+                                                <button class="popover-btn primary" onclick="saveRemark('100333')">确定</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="action-link">查看</span></td>
+                                <td class="col-fixed-right-2">
+                                    <div class="status-badge status-wait" onclick="openStatusModal('100333', '待处理', event)">
+                                        <span class="status-dot"></span>待处理
+                                    </div>
+                                </td>
+                                <td class="col-fixed-right-1">
+                                    <div class="action-icons">
+                                        <span class="action-icon" data-tooltip="运行详情" onclick="viewDetail('100333')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon" data-tooltip="重新检测" onclick="recheck('100333')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="action-icon delete" data-tooltip="删除" onclick="deleteItem('100333')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页栏 -->
+                <div class="pagination-footer">
+                    <span style="color:#666; margin-right:auto;" id="totalCount">共 10 条实例</span>
+                    <div id="paginationNumbers"></div>
+                    <select id="pageSizeSelect" style="height:28px; border:1px solid #d9d9d9; border-radius:4px; color:#666;" onchange="updatePagination()">
+                        <option value="50">50 条/页</option>
+                        <option value="100">100 条/页</option>
+                    </select>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 状态修改弹窗 -->
+    <div class="status-modal" id="statusModal">
+        <div class="status-modal-content">
+            <div class="status-modal-title">修改问题状态</div>
+            <div class="status-modal-form-item">
+                <label class="status-modal-label">问题状态</label>
+                <select class="status-modal-select" id="statusSelect">
+                    <option value="待处理">待处理</option>
+                    <option value="处理中">处理中</option>
+                    <option value="已处理">已处理</option>
+                    <option value="已忽略">已忽略</option>
+                </select>
+            </div>
+            <div class="status-modal-form-item">
+                <label class="status-modal-label">问题备注</label>
+                <textarea class="status-modal-textarea" id="statusRemark" placeholder="请输入备注"></textarea>
+            </div>
+            <div class="status-modal-actions">
+                <button class="modal-btn" onclick="closeStatusModal()">取消</button>
+                <button class="modal-btn primary" onclick="saveStatus()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 切换左侧一级导航
+        function switchNav(el) {
+            document.querySelectorAll('.nav-icon-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            el.classList.add('active');
+        }
+
+        // 切换二级菜单折叠状态
+        function toggleMenu(header) {
+            // 切换箭头旋转类
+            header.classList.toggle('collapsed');
+            
+            // 查找下一个兄弟元素（即 menu-list）
+            const list = header.nextElementSibling;
+            if (list && list.classList.contains('menu-list')) {
+                list.classList.toggle('collapsed');
+            }
+        }
+
+        // 选中具体菜单项
+        function selectItem(el) {
+            // 移除所有可选项的一级和二级 active 状态
+            document.querySelectorAll('.selectable').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // 添加当前项 active
+            el.classList.add('active');
+        }
+
+        // 备注编辑相关
+        let currentRemarkId = null;
+        
+        function openRemarkEdit(event, id) {
+            event.stopPropagation();
+            // 关闭其他已打开的备注编辑
+            document.querySelectorAll('.remark-popover').forEach(pop => {
+                pop.classList.remove('show');
+            });
+            currentRemarkId = id;
+            const popover = document.getElementById('remark-popover-' + id);
+            if (popover) {
+                popover.classList.add('show');
+                const textarea = popover.querySelector('textarea');
+                const remarkText = popover.closest('.remark-cell').querySelector('.remark-text').textContent;
+                textarea.value = remarkText === '--' ? '' : remarkText;
+                textarea.focus();
+            }
+        }
+
+        function closeRemarkEdit(id) {
+            const popover = document.getElementById('remark-popover-' + id);
+            if (popover) {
+                popover.classList.remove('show');
+            }
+            currentRemarkId = null;
+        }
+
+        function saveRemark(id) {
+            const popover = document.getElementById('remark-popover-' + id);
+            if (popover) {
+                const textarea = popover.querySelector('textarea');
+                const newRemark = textarea.value.trim();
+                const remarkText = popover.closest('.remark-cell').querySelector('.remark-text');
+                remarkText.textContent = newRemark || '--';
+                // 更新tooltip
+                updateRemarkTooltip(remarkText);
+                popover.classList.remove('show');
+                // 这里可以添加保存到后端的逻辑
+                console.log('保存备注:', id, newRemark);
+            }
+            currentRemarkId = null;
+        }
+        
+        // 更新备注tooltip
+        function updateRemarkTooltip(remarkTextElement) {
+            const text = remarkTextElement.textContent;
+            if (text && text !== '--') {
+                remarkTextElement.setAttribute('data-tooltip', text);
+            } else {
+                remarkTextElement.removeAttribute('data-tooltip');
+            }
+        }
+        
+        // 初始化所有备注的tooltip
+        function initRemarkTooltips() {
+            document.querySelectorAll('.remark-text').forEach(remarkText => {
+                updateRemarkTooltip(remarkText);
+            });
+        }
+
+        // 点击外部关闭备注编辑
+        document.addEventListener('click', function(e) {
+            if (currentRemarkId && !e.target.closest('.remark-cell')) {
+                closeRemarkEdit(currentRemarkId);
+            }
+        });
+
+        // 状态修改相关
+        let currentStatusId = null;
+        let currentStatusCell = null;
+        let currentOriginalRemark = null; // 保存原始备注，用于判断是否需要更新
+
+        function openStatusModal(id, currentStatus, event) {
+            currentStatusId = id;
+            const modal = document.getElementById('statusModal');
+            const statusSelect = document.getElementById('statusSelect');
+            const statusRemark = document.getElementById('statusRemark');
+            
+            // 找到当前行的状态和备注
+            const target = event ? event.target : window.event.target;
+            const row = target.closest('tr');
+            currentStatusCell = row.querySelector('.status-badge');
+            const remarkTextElement = row.querySelector('.remark-text');
+            const currentRemark = remarkTextElement.textContent;
+            
+            // 保存原始备注（如果显示"--"则视为空）
+            currentOriginalRemark = currentRemark === '--' ? '' : currentRemark;
+            
+            statusSelect.value = currentStatus;
+            // 备注输入框始终为空（新的）
+            statusRemark.value = '';
+            modal.classList.add('show');
+        }
+
+        function closeStatusModal() {
+            const modal = document.getElementById('statusModal');
+            modal.classList.remove('show');
+            currentStatusId = null;
+            currentStatusCell = null;
+            currentOriginalRemark = null;
+        }
+
+        function saveStatus() {
+            const statusSelect = document.getElementById('statusSelect');
+            const statusRemark = document.getElementById('statusRemark');
+            const newStatus = statusSelect.value;
+            const newRemark = statusRemark.value.trim();
+            
+            if (currentStatusCell) {
+                // 更新状态显示
+                const statusMap = {
+                    '待处理': 'status-wait',
+                    '处理中': 'status-process',
+                    '已处理': 'status-done',
+                    '已忽略': 'status-ignore'
+                };
+                
+                // 移除所有状态类
+                currentStatusCell.className = 'status-badge ' + statusMap[newStatus];
+                currentStatusCell.innerHTML = '<span class="status-dot"></span>' + newStatus;
+                currentStatusCell.setAttribute('onclick', `openStatusModal('${currentStatusId}', '${newStatus}', event)`);
+                
+                // 更新备注：只有在输入框有内容时才覆盖，否则保持原备注
+                const row = currentStatusCell.closest('tr');
+                const remarkText = row.querySelector('.remark-text');
+                if (newRemark) {
+                    // 有输入内容，覆盖原备注
+                    remarkText.textContent = newRemark;
+                } else {
+                    // 没有输入内容，保持原备注（如果原备注为空则显示"--"）
+                    remarkText.textContent = currentOriginalRemark || '--';
+                }
+                // 更新tooltip
+                updateRemarkTooltip(remarkText);
+            }
+            
+            // 这里可以添加保存到后端的逻辑
+            console.log('保存状态:', currentStatusId, newStatus, newRemark || '(未修改备注)');
+            
+            closeStatusModal();
+        }
+
+        // 点击弹窗外部关闭
+        document.getElementById('statusModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeStatusModal();
+            }
+        });
+
+        // 操作列功能
+        function viewDetail(id) {
+            console.log('查看详情:', id);
+            // 这里可以添加跳转或打开详情页的逻辑
+        }
+
+        function recheck(id) {
+            console.log('重新检测:', id);
+            // 这里可以添加重新检测的逻辑
+        }
+
+        function deleteItem(id) {
+            if (confirm('确定要删除这个问题吗？')) {
+                console.log('删除:', id);
+                // 这里可以添加删除的逻辑
+            }
+        }
+
+        // 筛选功能
+        // 当前选中的状态筛选
+        let currentStatusFilter = 'all';
+        
+        // 状态筛选
+        function filterByStatus(status) {
+            currentStatusFilter = status;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.status-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const statusMap = {
+                'all': 'status-filter-all',
+                '待处理': 'status-filter-wait',
+                '处理中': 'status-filter-process',
+                '已处理': 'status-filter-done',
+                '已忽略': 'status-filter-ignore'
+            };
+            
+            const activeBtn = document.getElementById(statusMap[status]);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+            
+            // 应用筛选
+            applyFilters();
+        }
+        
+        // 统计各状态数量（基于所有数据，不受筛选影响）
+        function updateStatusCounts() {
+            const rows = document.querySelectorAll('.data-table tbody tr');
+            const counts = {
+                all: 0,
+                wait: 0,
+                process: 0,
+                done: 0,
+                ignore: 0
+            };
+            
+            rows.forEach(row => {
+                // 统计所有行，不管是否被隐藏
+                counts.all++;
+                const statusBadge = row.querySelector('.status-badge');
+                if (statusBadge) {
+                    const statusText = statusBadge.textContent.trim();
+                    if (statusText.includes('待处理')) {
+                        counts.wait++;
+                    } else if (statusText.includes('处理中')) {
+                        counts.process++;
+                    } else if (statusText.includes('已处理')) {
+                        counts.done++;
+                    } else if (statusText.includes('已忽略')) {
+                        counts.ignore++;
+                    }
+                }
+            });
+            
+            // 更新状态筛选按钮显示
+            document.getElementById('count-all').textContent = counts.all;
+            document.getElementById('count-wait').textContent = counts.wait;
+            document.getElementById('count-process').textContent = counts.process;
+            document.getElementById('count-done').textContent = counts.done;
+            document.getElementById('count-ignore').textContent = counts.ignore;
+            
+            // 更新底部总数
+            const totalCountElement = document.getElementById('totalCount');
+            if (totalCountElement) {
+                totalCountElement.textContent = `共 ${counts.all} 条实例`;
+            }
+            
+            // 更新分页
+            updatePagination();
+        }
+        
+        // 当前页码
+        let currentPage = 1;
+        let pageSize = 50;
+        
+        // 更新分页栏
+        function updatePagination() {
+            const pageSizeSelect = document.getElementById('pageSizeSelect');
+            if (pageSizeSelect) {
+                pageSize = parseInt(pageSizeSelect.value) || 50;
+            }
+            
+            const totalCountElement = document.getElementById('totalCount');
+            let totalCount = 10; // 默认值
+            if (totalCountElement) {
+                const match = totalCountElement.textContent.match(/(\d+)/);
+                if (match) {
+                    totalCount = parseInt(match[1]);
+                }
+            }
+            
+            let totalPages = Math.ceil(totalCount / pageSize);
+            if (totalPages === 0) totalPages = 1;
+            
+            // 确保当前页不超过总页数
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+            
+            const paginationContainer = document.getElementById('paginationNumbers');
+            if (!paginationContainer) return;
+            
+            let html = '';
+            
+            // 上一页按钮
+            html += `<span class="page-num" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'style="opacity:0.5;cursor:not-allowed;"' : ''}>&lt;</span>`;
+            
+            // 页码按钮
+            if (totalPages <= 7) {
+                // 如果总页数少于等于7，显示所有页码
+                for (let i = 1; i <= totalPages; i++) {
+                    html += `<span class="page-num ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</span>`;
+                }
+            } else {
+                // 如果总页数大于7，显示省略号
+                if (currentPage <= 3) {
+                    // 前几页
+                    for (let i = 1; i <= 4; i++) {
+                        html += `<span class="page-num ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</span>`;
+                    }
+                    html += `<span class="page-num">...</span>`;
+                    html += `<span class="page-num" onclick="goToPage(${totalPages})">${totalPages}</span>`;
+                } else if (currentPage >= totalPages - 2) {
+                    // 后几页
+                    html += `<span class="page-num" onclick="goToPage(1)">1</span>`;
+                    html += `<span class="page-num">...</span>`;
+                    for (let i = totalPages - 3; i <= totalPages; i++) {
+                        html += `<span class="page-num ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</span>`;
+                    }
+                } else {
+                    // 中间页
+                    html += `<span class="page-num" onclick="goToPage(1)">1</span>`;
+                    html += `<span class="page-num">...</span>`;
+                    for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                        html += `<span class="page-num ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</span>`;
+                    }
+                    html += `<span class="page-num">...</span>`;
+                    html += `<span class="page-num" onclick="goToPage(${totalPages})">${totalPages}</span>`;
+                }
+            }
+            
+            // 下一页按钮
+            html += `<span class="page-num" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'style="opacity:0.5;cursor:not-allowed;"' : ''}>&gt;</span>`;
+            
+            paginationContainer.innerHTML = html;
+        }
+        
+        // 跳转到指定页
+        function goToPage(page) {
+            const totalCountElement = document.getElementById('totalCount');
+            let totalCount = 10;
+            if (totalCountElement) {
+                const match = totalCountElement.textContent.match(/(\d+)/);
+                if (match) {
+                    totalCount = parseInt(match[1]);
+                }
+            }
+            
+            const totalPages = Math.ceil(totalCount / pageSize);
+            
+            if (page < 1 || page > totalPages) {
+                return;
+            }
+            
+            currentPage = page;
+            updatePagination();
+            
+            // 这里可以添加实际的分页逻辑，显示对应页的数据
+            // 目前所有数据都在一页显示，所以暂时不需要隐藏数据
+        }
+        
+        // 下拉菜单切换
+        function toggleDropdown(id) {
+            const dropdown = document.getElementById(id);
+            const isOpen = dropdown.classList.contains('open');
+            
+            // 关闭所有下拉菜单
+            document.querySelectorAll('.filter-dropdown').forEach(d => {
+                d.classList.remove('open');
+            });
+            
+            // 切换当前下拉菜单
+            if (!isOpen) {
+                dropdown.classList.add('open');
+            }
+        }
+
+        // 点击外部关闭下拉菜单
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.filter-dropdown')) {
+                document.querySelectorAll('.filter-dropdown').forEach(d => {
+                    d.classList.remove('open');
+                });
+            }
+        });
+
+        // 规则强度多选处理
+        let selectedStrengths = ['all'];
+        function handleStrengthChange(value) {
+            const allCheckbox = document.getElementById('strength-all');
+            const strongCheckbox = document.getElementById('strength-strong');
+            const weakCheckbox = document.getElementById('strength-weak');
+            const strengthText = document.getElementById('strengthText');
+
+            if (value === 'all') {
+                if (allCheckbox.checked) {
+                    strongCheckbox.checked = false;
+                    weakCheckbox.checked = false;
+                    selectedStrengths = ['all'];
+                    strengthText.textContent = '规则强度';
+                } else {
+                    allCheckbox.checked = true;
+                }
+            } else {
+                allCheckbox.checked = false;
+                if (value === 'strong') {
+                    if (strongCheckbox.checked) {
+                        selectedStrengths.push('强规则');
+                    } else {
+                        selectedStrengths = selectedStrengths.filter(s => s !== '强规则');
+                    }
+                } else if (value === 'weak') {
+                    if (weakCheckbox.checked) {
+                        selectedStrengths.push('弱规则');
+                    } else {
+                        selectedStrengths = selectedStrengths.filter(s => s !== '弱规则');
+                    }
+                }
+                
+                if (selectedStrengths.length === 0) {
+                    allCheckbox.checked = true;
+                    selectedStrengths = ['all'];
+                    strengthText.textContent = '规则强度';
+                } else {
+                    selectedStrengths = selectedStrengths.filter(s => s !== 'all');
+                    const labels = selectedStrengths.map(s => s === '强规则' ? '强规则' : '弱规则');
+                    strengthText.textContent = labels.length > 0 ? labels.join('、') : '规则强度';
+                }
+            }
+            
+            applyFilters();
+        }
+
+        // 规则类型多选处理
+        let selectedTypes = ['all'];
+        const typeMap = {
+            'unique': '唯一性',
+            'integrity': '完整性',
+            'validity': '有效性',
+            'consistency': '一致性',
+            'accuracy': '准确性'
+        };
+        
+        function handleTypeChange(value) {
+            const allCheckbox = document.getElementById('type-all');
+            const typeText = document.getElementById('typeText');
+
+            if (value === 'all') {
+                if (allCheckbox.checked) {
+                    // 取消所有其他选项
+                    Object.keys(typeMap).forEach(key => {
+                        document.getElementById('type-' + key).checked = false;
+                    });
+                    selectedTypes = ['all'];
+                    typeText.textContent = '规则类型';
+                } else {
+                    allCheckbox.checked = true;
+                }
+            } else {
+                allCheckbox.checked = false;
+                const checkbox = document.getElementById('type-' + value);
+                const typeValue = typeMap[value];
+                
+                if (checkbox.checked) {
+                    selectedTypes.push(typeValue);
+                } else {
+                    selectedTypes = selectedTypes.filter(t => t !== typeValue);
+                }
+                
+                if (selectedTypes.length === 0) {
+                    allCheckbox.checked = true;
+                    selectedTypes = ['all'];
+                    typeText.textContent = '规则类型';
+                } else {
+                    selectedTypes = selectedTypes.filter(t => t !== 'all');
+                    typeText.textContent = selectedTypes.length > 0 ? selectedTypes.join('、') : '规则类型';
+                }
+            }
+            
+            applyFilters();
+        }
+
+        // 搜索功能（模糊匹配）
+        function handleSearch() {
+            applyFilters();
+        }
+
+        // 应用所有筛选条件
+        function applyFilters() {
+            const searchType = document.getElementById('searchType').value;
+            const searchValue = document.getElementById('searchInput').value.trim().toLowerCase();
+            const dateFilter = document.getElementById('dateFilter').value;
+            
+            const rows = document.querySelectorAll('.data-table tbody tr');
+            
+            rows.forEach(row => {
+                let showRow = true;
+                
+                // 搜索筛选
+                if (searchValue) {
+                    let cellValue = '';
+                    if (searchType === '检测表') {
+                        cellValue = row.cells[2]?.textContent || ''; // 检测表列
+                    } else if (searchType === '检测对象') {
+                        cellValue = row.cells[3]?.textContent || ''; // 检测对象列
+                    } else if (searchType === '规则名称') {
+                        cellValue = row.cells[4]?.textContent || ''; // 规则名称列
+                    } else if (searchType === '问题备注') {
+                        // 搜索问题备注列
+                        const remarkCell = row.cells[8]; // 问题备注列
+                        cellValue = remarkCell?.querySelector('.remark-text')?.textContent || '';
+                    }
+                    
+                    if (!cellValue.toLowerCase().includes(searchValue)) {
+                        showRow = false;
+                    }
+                }
+                
+                // 规则强度筛选
+                if (showRow && !selectedStrengths.includes('all')) {
+                    const strengthCell = row.cells[5]; // 规则强度列
+                    const strengthText = strengthCell?.textContent || '';
+                    let match = false;
+                    
+                    if (selectedStrengths.includes('强规则') && strengthText.includes('强')) {
+                        match = true;
+                    }
+                    if (selectedStrengths.includes('弱规则') && strengthText.includes('弱')) {
+                        match = true;
+                    }
+                    
+                    if (!match) {
+                        showRow = false;
+                    }
+                }
+                
+                // 规则类型筛选
+                if (showRow && !selectedTypes.includes('all')) {
+                    const typeCell = row.cells[6]; // 规则类型列
+                    const typeText = typeCell?.textContent || '';
+                    
+                    if (!selectedTypes.includes(typeText)) {
+                        showRow = false;
+                    }
+                }
+                
+                // 日期筛选
+                if (showRow && dateFilter) {
+                    const dateCell = row.cells[7]; // 问题生成时间列
+                    const dateText = dateCell?.textContent || '';
+                    const rowDate = dateText.split(' ')[0]; // 提取日期部分
+                    
+                    if (rowDate !== dateFilter) {
+                        showRow = false;
+                    }
+                }
+                
+                // 状态筛选
+                if (showRow && currentStatusFilter !== 'all') {
+                    const statusBadge = row.querySelector('.status-badge');
+                    if (statusBadge) {
+                        const statusText = statusBadge.textContent.trim();
+                        if (!statusText.includes(currentStatusFilter)) {
+                            showRow = false;
+                        }
+                    } else {
+                        showRow = false;
+                    }
+                }
+                
+                // 显示/隐藏行
+                row.style.display = showRow ? '' : 'none';
+            });
+        }
+
+        // 重置筛选
+        function resetFilters() {
+            // 重置搜索
+            document.getElementById('searchType').value = '检测表';
+            document.getElementById('searchInput').value = '';
+            
+            // 重置规则强度
+            document.getElementById('strength-all').checked = true;
+            document.getElementById('strength-strong').checked = false;
+            document.getElementById('strength-weak').checked = false;
+            selectedStrengths = ['all'];
+            document.getElementById('strengthText').textContent = '规则强度';
+            
+            // 重置规则类型
+            document.getElementById('type-all').checked = true;
+            Object.keys(typeMap).forEach(key => {
+                document.getElementById('type-' + key).checked = false;
+            });
+            selectedTypes = ['all'];
+            document.getElementById('typeText').textContent = '规则类型';
+            
+            // 重置日期
+            document.getElementById('dateFilter').value = '';
+            
+            // 重置状态筛选
+            filterByStatus('all');
+            
+            // 显示所有行
+            document.querySelectorAll('.data-table tbody tr').forEach(row => {
+                row.style.display = '';
+            });
+            
+            // 更新状态数量
+            updateStatusCounts();
+        }
+        
+        // 页面加载时初始化状态数量和备注tooltip
+        // 如果DOM已加载则直接调用，否则等待加载完成
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                updateStatusCounts();
+                initRemarkTooltips();
+            });
+        } else {
+            updateStatusCounts();
+            initRemarkTooltips();
+        }
+    </script>
+</body>
+</html>

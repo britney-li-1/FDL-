@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同步任务管理 - 筛选式跳转交互</title>
+    <style>
+        /* ====== 全局样式 ====== */
+        body { margin: 0; padding: 0; background-color: #f5f7fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; font-size: 14px; }
+        * { box-sizing: border-box; outline: none; }
+        
+        /* ====== 布局 ====== */
+        .header { background: #fff; padding: 20px 24px; border-bottom: 1px solid #e8e8e8; }
+        .tabs { display: flex; background: #fff; padding: 0 24px; border-bottom: 1px solid #e8e8e8; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .tab-item { padding: 12px 24px; cursor: pointer; color: #666; font-size: 14px; position: relative; transition: color 0.3s; }
+        .tab-item:hover { color: #1890ff; }
+        .tab-item.active { color: #1890ff; font-weight: 500; }
+        .tab-item.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: #1890ff; }
+        .container { padding: 0 24px 80px 24px; max-width: 1400px; margin: 0 auto; }
+        
+        .flex { display: flex; align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 8px; } .gap-4 { gap: 16px; } .mb-4 { margin-bottom: 16px; }
+        .text-blue { color: #1890ff; } .text-red { color: #ff4d4f; } .text-gray { color: #999; }
+        .font-bold { font-weight: bold; } .cursor-pointer { cursor: pointer; }
+
+        /* ====== 组件 ====== */
+        .btn { border: 1px solid transparent; cursor: pointer; padding: 5px 12px; font-size: 14px; border-radius: 2px; transition: all 0.3s; background: #fff; }
+        .btn-primary { background: #1890ff; color: #fff; border-color: #1890ff; }
+        
+        /* 搜索框 (支持内嵌Tag) */
+        .search-wrapper { 
+            display: flex; align-items: center; border: 1px solid #d9d9d9; border-radius: 2px; padding: 4px 11px; width: 340px; background: #fff; transition: all 0.3s;
+        }
+        .search-wrapper.filtered { border-color: #ffc069; background: #fff7e6; }
+        .search-input { border: none; flex: 1; margin-left: 8px; font-size: 14px; background: transparent; }
+        
+        /* 筛选Tag */
+        .filter-tag { background: #fff; border: 1px dashed #ffa39e; color: #cf1322; padding: 0 6px; font-size: 12px; border-radius: 2px; margin-right: 8px; white-space: nowrap; height: 22px; line-height: 20px; display: flex; align-items: center; gap: 4px; }
+        .filter-close { cursor: pointer; color: #ffccc7; font-size: 14px; font-weight: bold; }
+        .filter-close:hover { color: #cf1322; }
+
+        /* 表格 */
+        .table-container { background: #fff; border-radius: 2px; border: 1px solid #e8e8e8; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 14px 16px; background: #fafafa; border-bottom: 1px solid #e8e8e8; font-weight: 500; color: #595959; }
+        td { padding: 14px 16px; border-bottom: 1px solid #e8e8e8; color: #595959; }
+        tr:hover td { background: #f0f7ff; }
+        tr.active-row td { background: #e6f7ff; }
+        
+        .checkbox-wrap { position: relative; width: 16px; height: 16px; cursor: pointer; display: inline-block; vertical-align: middle; }
+        .checkbox-input { opacity: 0; position: absolute; width: 100%; height: 100%; cursor: pointer; z-index: 1; }
+        .checkbox-inner { position: absolute; top: 0; left: 0; width: 16px; height: 16px; border: 1px solid #d9d9d9; border-radius: 2px; background: #fff; }
+        .checkbox-input:checked + .checkbox-inner { background: #1890ff; border-color: #1890ff; }
+        .checkbox-input:checked + .checkbox-inner::after { content: ''; position: absolute; left: 4px; top: 1px; width: 5px; height: 8px; border: 2px solid #fff; border-top: 0; border-left: 0; transform: rotate(45deg); }
+        .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+        .status-gray { background: #d9d9d9; } .status-yellow { background: #faad14; }
+
+        /* 顶部批量栏 (Config) */
+        .config-batch-bar { display: flex; align-items: center; padding: 12px 16px; background: #e6f7ff; border-bottom: 1px solid #1890ff; }
+        .divider { width: 1px; height: 14px; background: #bce0ff; margin: 0 16px; } 
+        /* 注意：这里改了背景色以便演示选中状态，你也可以改回白色 */
+
+        /* 底部悬浮栏 (Activity) */
+        .bottom-float-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; background: #fff; box-shadow: 0 -2px 8px rgba(0,0,0,0.09);
+            padding: 12px 24px; z-index: 100; display: flex; align-items: center;
+            transform: translateY(100%); transition: transform 0.3s ease-out;
+        }
+        .bottom-float-bar.visible { transform: translateY(0); }
+
+        .jump-btn { display: flex; align-items: center; gap: 4px; font-weight: 500; color: #1890ff; border: none; background: none; cursor: pointer; padding: 0; font-size: 14px; transition: transform 0.2s; }
+        .jump-btn:hover { transform: translateX(4px); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="flex justify-between">
+            <div class="flex items-center gap-3">
+                <div style="background:#52c41a; color:#fff; width:24px; height:24px; text-align:center; line-height:24px; border-radius:4px; font-weight:bold;">⇄</div>
+                <span class="font-bold text-lg">任务125</span>
+                <span style="background:#fff7e6; color:#fa541c; padding:1px 6px; border:1px solid #ffd591; border-radius:2px; font-size:12px;">停止运行</span>
+            </div>
+            <div class="text-gray text-xs">创建人: admin</div>
+        </div>
+    </div>
+
+    <!-- 标签 -->
+    <div class="tabs">
+        <div class="tab-item" id="tab-config" onclick="app.switchTab('config')">同步配置</div>
+        <div class="tab-item active" id="tab-activity" onclick="app.switchTab('activity')">管道活动</div>
+    </div>
+
+    <div class="container">
+        
+        <!-- ================== Toolbar: Config ================== -->
+        <div id="toolbar-config" class="flex justify-between mb-4" style="display:none;">
+            <div class="flex gap-2">
+                <button class="btn btn-primary">+ 添加表</button>
+            </div>
+            <div class="flex gap-4">
+                <!-- Config 搜索框 -->
+                <div class="search-wrapper" id="search-config">
+                    <span class="text-gray" style="font-size:12px; margin-right:6px;">🔍</span>
+                    
+                    <!-- 筛选 Tag: 默认隐藏 -->
+                    <div class="filter-tag" id="tag-config" style="display:none;">
+                        来自管道活动 (<span id="tag-count-config">0</span>)
+                        <span class="filter-close" onclick="app.clearFilter()">✕</span>
+                    </div>
+
+                    <input type="text" class="search-input" placeholder="搜索配置...">
+                </div>
+            </div>
+        </div>
+
+        <!-- ================== Toolbar: Activity ================== -->
+        <div id="toolbar-activity" class="flex justify-between mb-4">
+            <div class="flex gap-4 text-sm">
+                <span style="background:#e6f7ff; color:#1890ff; padding:4px 12px; border-radius:2px; font-weight:500;">全部</span>
+                <span class="text-gray cursor-pointer">待启动 4</span>
+            </div>
+            <div class="flex gap-3">
+                <!-- Activity 搜索框 -->
+                <div class="search-wrapper" id="search-activity" style="width: auto; border: none; background: transparent;">
+                     <!-- 筛选 Tag: 默认隐藏 -->
+                     <div class="filter-tag" id="tag-activity" style="display:none; margin-right:12px;">
+                        来自同步配置 (<span id="tag-count-activity">0</span>)
+                        <span class="filter-close" onclick="app.clearFilter()">✕</span>
+                    </div>
+                    <span class="text-gray text-xs">🔍</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================== 批量操作栏 (Config 页嵌入式) ================== -->
+        <div id="config-batch-bar" class="config-batch-bar" style="display:none;">
+            <span style="font-size:14px; margin-right:12px;">已选择 <b class="text-blue" id="batch-sel-count">0</b> 项</span>
+            <span class="text-gray cursor-pointer text-xs" onclick="app.clearSelection()">取消</span>
+            <div class="divider"></div>
+            <span class="action-link text-blue font-bold cursor-pointer" style="margin-right:16px;">编辑表</span>
+            <span class="action-link text-red cursor-pointer" style="margin-right:16px;">批量删除</span>
+            <div class="divider"></div>
+            <!-- 核心交互：Config -> Activity -->
+            <button class="jump-btn" onclick="app.jumpToActivity()">
+                 查看运行状态 ➜
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead><tr id="table-head"></tr></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ================== 底部悬浮栏 (Activity 页) ================== -->
+    <div class="bottom-float-bar" id="bottom-bar">
+        <div style="width:100%; display:flex; align-items:center;">
+            <span class="text-gray" style="margin-right:24px;">已选择 <b class="text-blue" id="float-sel-count">0</b> 项</span>
+            <div class="flex gap-4" style="font-weight:500; font-size:14px;">
+                <span class="text-blue cursor-pointer">批量启动</span>
+                <span class="text-blue cursor-pointer">批量暂停</span>
+            </div>
+            <div style="width:1px; height:18px; background:#e8e8e8; margin:0 24px;"></div>
+            <!-- 核心交互：Activity -> Config -->
+            <button class="jump-btn" onclick="app.jumpToConfig()">
+                <span style="font-size:16px;">✎</span> 修改任务配置 ➜
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            data: {
+                currentTab: 'activity',
+                // 每个Tab独立的选中状态（用户手动切换Tab时，可选择保留或清空，这里演示独立保留体验更好）
+                selection: {
+                    activity: [],
+                    config: []
+                },
+                // 筛选上下文
+                filter: {
+                    active: false,
+                    source: null, // 'from-activity' | 'from-config'
+                    ids: []       // 筛选出的ID集合
+                },
+                rows: [
+                    { id: 'g1', isGroup: true, name: '来源库: chole' },
+                    { id: 1, name: 'DW_NC_ACCOUNT_V1', type: '增量', target: 'ODS_T1', status: '待启动' },
+                    { id: 2, name: 'DW_NC_ACCOUNT_V2', type: '全量', target: 'ODS_T2', status: '待启动' },
+                    { id: 'g2', isGroup: true, name: '来源库: mysql' },
+                    { id: 3, name: 'USER_INFO', type: '增量', target: 'BI_USER', status: '已暂停' },
+                    { id: 4, name: 'ORDER_LIST', type: '增量', target: 'BI_ORDER', status: '待启动' }
+                ]
+            },
+
+            init() { this.render(); },
+
+            // 基础切换
+            switchTab(tab) {
+                this.data.currentTab = tab;
+                // 注意：手动切换Tab，我们不应该清除筛选吗？
+                // 根据需求：“关闭后显示所有表”，说明如果不关闭，筛选是持久的
+                // 这里我们暂定：手动切Tab保留当前Tab的状态（Filter & Selection）
+                this.updateUI();
+            },
+
+            // ================= 核心交互逻辑 =================
+
+            // 场景 1：Activity 勾选 -> 跳转并筛选 Config
+            jumpToConfig() {
+                const ids = this.data.selection.activity;
+                if (ids.length === 0) return;
+
+                // 1. 设置筛选条件
+                this.data.filter = {
+                    active: true,
+                    source: 'from-activity',
+                    ids: [...ids] // 锁定这组ID
+                };
+
+                // 2. 切换 Tab
+                this.data.currentTab = 'config';
+
+                // 3. 【关键】清空 Config 页的勾选状态
+                // 需求：Config页能筛选出来这些表，不勾选。
+                this.data.selection.config = [];
+
+                this.updateUI();
+            },
+
+            // 场景 2：Config 勾选 -> 跳转并筛选 Activity
+            jumpToActivity() {
+                const ids = this.data.selection.config;
+                if (ids.length === 0) return;
+
+                this.data.filter = {
+                    active: true,
+                    source: 'from-config',
+                    ids: [...ids]
+                };
+                
+                this.data.currentTab = 'activity';
+                
+                // 3. 【关键】清空 Activity 页的勾选状态
+                // 需求：如果原来有勾选项，需要考虑...清空是防止误操作的最佳实践
+                this.data.selection.activity = [];
+
+                this.updateUI();
+            },
+
+            // 关闭筛选 -> 显示全部
+            clearFilter() {
+                this.data.filter.active = false;
+                this.data.filter.ids = [];
+                // 虽然关闭了筛选，但当前页面已勾选的内容，无需强制清空，用户可能想保留
+                this.render();
+            },
+
+            // ================= 通用逻辑 =================
+
+            getCurrentSelection() {
+                return this.data.selection[this.data.currentTab];
+            },
+
+            toggleSelect(id) {
+                const list = this.getCurrentSelection();
+                const idx = list.indexOf(id);
+                if (idx > -1) list.splice(idx, 1);
+                else list.push(id);
+                this.render();
+            },
+
+            // 智能全选：只选当前可见的（筛选后的）
+            toggleAll() {
+                const visibleIds = this.getVisibleRows().filter(r => !r.isGroup).map(r => r.id);
+                const currentList = this.getCurrentSelection();
+                
+                // 检查可见的是否都选了
+                const isAllVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => currentList.includes(id));
+                
+                if (isAllVisibleSelected) {
+                    // 反选：从选中列表中移除可见的ID
+                    this.data.selection[this.data.currentTab] = currentList.filter(id => !visibleIds.includes(id));
+                } else {
+                    // 全选：把没选的可见ID加进去
+                    visibleIds.forEach(id => {
+                        if(!currentList.includes(id)) currentList.push(id);
+                    });
+                }
+                this.render();
+            },
+
+            clearSelection() {
+                this.data.selection[this.data.currentTab] = [];
+                this.render();
+            },
+
+            getVisibleRows() {
+                const { filter, currentTab } = this.data;
+                // 只有当 filter.active 为 true，且 filter.source 对应当前方向时才过滤
+                // 比如从 Activity 跳过来，Current=Config，Source=from-activity -> 过滤生效
+                // 从 Config 跳回去，Current=Activity, Source=from-config -> 过滤生效
+                
+                // 简化判断：只要有 IDs 就过滤，不论当前是哪个 Tab，通常用户希望筛选是全局锁定的感觉?
+                // 或者根据需求：Tag是在 specific tab 显示的。
+                
+                if (filter.active && filter.ids.length > 0) {
+                    // 过滤时保留 Group Header 会更友好
+                    return this.data.rows.filter(r => r.isGroup || filter.ids.includes(r.id));
+                }
+                return this.data.rows;
+            },
+
+            updateUI() {
+                // DOM 更新
+                const isConfig = this.data.currentTab === 'config';
+                const isActivity = !isConfig;
+                
+                document.getElementById('toolbar-config').style.display = isConfig ? 'flex' : 'none';
+                document.getElementById('toolbar-activity').style.display = isActivity ? 'flex' : 'none';
+                
+                document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+                document.getElementById(isConfig ? 'tab-config' : 'tab-activity').classList.add('active');
+
+                this.render();
+            },
+
+            render() {
+                const { currentTab, filter } = this.data;
+                const visibleRows = this.getVisibleRows();
+                const selectedIds = this.getCurrentSelection();
+                
+                // === 1. 渲染 Tag 状态 ===
+                const isConfig = currentTab === 'config';
+                
+                // Config页 Tag
+                const tagConfig = document.getElementById('tag-config');
+                const searchConfig = document.getElementById('search-config');
+                const showConfigTag = isConfig && filter.active && filter.source === 'from-activity';
+                
+                tagConfig.style.display = showConfigTag ? 'flex' : 'none';
+                searchConfig.classList.toggle('filtered', showConfigTag);
+                if(showConfigTag) document.getElementById('tag-count-config').innerText = filter.ids.length;
+
+                // Activity页 Tag
+                const tagActivity = document.getElementById('tag-activity');
+                const searchActivity = document.getElementById('search-activity');
+                const showActivityTag = !isConfig && filter.active && filter.source === 'from-config';
+                
+                tagActivity.style.display = showActivityTag ? 'flex' : 'none';
+                searchActivity.classList.toggle('filtered', showActivityTag); 
+                // Activity 搜索框本身是透明的，加了 Tag 可以给个背景色强调
+                searchActivity.style.background = showActivityTag ? '#fff7e6' : 'transparent';
+                searchActivity.style.border = showActivityTag ? '1px solid #ffc069' : 'none';
+                if(showActivityTag) document.getElementById('tag-count-activity').innerText = filter.ids.length;
+
+                // === 2. 渲染表格 ===
+                const tbody = document.getElementById('table-body');
+                const thead = document.getElementById('table-head');
+
+                // 表头
+                const validVisibleCount = visibleRows.filter(r => !r.isGroup).length;
+                const isAllSelected = validVisibleCount > 0 && 
+                                      visibleRows.filter(r=>!r.isGroup).every(r => selectedIds.includes(r.id));
+                
+                let headCheck = `
+                    <th style="width:50px;text-align:center;">
+                        <label class="checkbox-wrap">
+                            <input type="checkbox" class="checkbox-input" ${isAllSelected?'checked':''} onclick="app.toggleAll()">
+                            <span class="checkbox-inner"></span>
+                        </label>
+                    </th>`;
+
+                if (isConfig) {
+                    thead.innerHTML = `${headCheck}<th>来源表</th><th style="color:#999">同步类型 ▼</th><th>目标表</th><th style="width:100px;">操作</th>`;
+                } else {
+                    thead.innerHTML = `${headCheck}<th>来源表</th><th>目标表</th><th>同步状态</th><th>说明</th>`;
+                }
+
+                // 表体
+                if (visibleRows.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px; color:#999;">没有找到匹配的表</td></tr>`;
+                } else {
+                    tbody.innerHTML = visibleRows.map(row => {
+                        if (row.isGroup) return `<tr style="background:#fafafa;"><td style="text-align:center;">-</td><td colspan="5" style="font-weight:500; color:#666;">${row.name}</td></tr>`;
+
+                        const isChecked = selectedIds.includes(row.id);
+                        let html = `<tr class="${isChecked ? 'active-row' : ''}">
+                            <td style="text-align:center;">
+                                <label class="checkbox-wrap">
+                                    <input type="checkbox" class="checkbox-input" ${isChecked?'checked':''} onclick="app.toggleSelect(${row.id})">
+                                    <span class="checkbox-inner"></span>
+                                </label>
+                            </td>
+                            <td>${row.name}</td>`;
+                        
+                        if (isConfig) {
+                            html += `<td>${row.type}</td><td>${row.target}</td>
+                                    <td style="text-align:right;"><span class="text-blue cursor-pointer">✎</span></td>`;
+                        } else {
+                            html += `<td>${row.target}</td><td><span class="status-dot ${row.status==='待启动'?'status-gray':'status-yellow'}"></span>${row.status}</td><td class="text-gray">--</td>`;
+                        }
+                        return html + '</tr>';
+                    }).join('');
+                }
+
+                // === 3. 操作栏显隐 ===
+                if (isConfig) {
+                    const bar = document.getElementById('config-batch-bar');
+                    if (selectedIds.length > 0) {
+                        bar.style.display = 'flex';
+                        document.getElementById('batch-sel-count').innerText = selectedIds.length;
+                    } else {
+                        bar.style.display = 'none';
+                    }
+                    // Hide bottom bar
+                    document.getElementById('bottom-bar').classList.remove('visible');
+                } else {
+                    const bar = document.getElementById('bottom-bar');
+                    if (selectedIds.length > 0) {
+                        bar.classList.add('visible');
+                        document.getElementById('float-sel-count').innerText = selectedIds.length;
+                    } else {
+                        bar.classList.remove('visible');
+                    }
+                    // Hide top config bar
+                    document.getElementById('config-batch-bar').style.display = 'none';
+                }
+            }
+        };
+
+        app.init();
+    </script>
+</body>
+</html>

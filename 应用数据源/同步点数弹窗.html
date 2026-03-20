@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同步点数总览 - 高保真与刷新方案</title>
+    <style>
+        /* --- 全局变量与重置 --- */
+        :root {
+            --primary-blue: #2563EB; /* 核心蓝色 */
+            --primary-light: #EFF6FF; /* 按钮淡蓝背景 */
+            --text-main: #111827;     /* 主要文字 */
+            --text-sub: #6B7280;      /* 次要文字 */
+            --border-line: #E5E7EB;   /* 分割线颜色 */
+            --chart-track: #E5E7EB;   /* 图表底色 */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #F3F4F6;
+            display: flex;
+            flex-direction: column; /* 垂直排列三个方案 */
+            align-items: center;
+            padding: 40px 20px;
+            gap: 40px;
+        }
+
+        h2 {
+            font-size: 14px;
+            color: #9CA3AF;
+            margin-bottom: -20px;
+            font-weight: normal;
+        }
+
+        /* --- 弹窗通用容器 --- */
+        .modal-card {
+            background: #fff;
+            width: 420px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- 头部 --- */
+        .modal-header {
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--primary-light); /* 极淡的分割 */
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .icon-help {
+            color: var(--text-sub);
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .icon-close {
+            color: var(--text-sub);
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            transition: color 0.2s;
+        }
+        .icon-close:hover { color: var(--text-main); }
+
+        /* --- 中间内容区 --- */
+        .modal-body {
+            padding: 24px;
+            display: flex;
+            gap: 32px;
+            align-items: flex-start;
+        }
+
+        /* 左侧图表 */
+        .chart-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            flex-shrink: 0;
+        }
+        
+        .chart-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            line-height: 1.2;
+        }
+        .chart-percent {
+            color: var(--primary-blue);
+            font-weight: 700;
+            font-size: 18px;
+            display: block;
+        }
+        .chart-label {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        /* SVG 环形图样式 */
+        .circular-chart {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .circle-bg {
+            fill: none;
+            stroke: var(--chart-track);
+            stroke-width: 2.5;
+        }
+        .circle {
+            fill: none;
+            stroke-width: 2.5;
+            stroke: var(--primary-blue);
+            stroke-linecap: round; /* 圆角端点 */
+            animation: progress 1s ease-out forwards;
+        }
+        @keyframes progress {
+            0% { stroke-dasharray: 0, 100; }
+        }
+
+        /* 右侧数据详情 */
+        .data-info {
+            flex-grow: 1;
+        }
+
+        .info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-line);
+            margin-bottom: 12px;
+        }
+
+        .sub-title {
+            font-size: 14px;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .big-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+        
+        .unit {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-sub);
+            margin-left: 2px;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: var(--text-sub);
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        .dot.blue { background-color: var(--primary-blue); }
+        .dot.gray { background-color: #E5E7EB; }
+
+        .legend-label { width: 40px; }
+        .legend-value { color: var(--text-main); margin-left: 12px;}
+
+        /* --- 底部按钮 --- */
+        .modal-footer {
+            padding: 0 24px 24px 24px;
+        }
+        
+        .buy-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--primary-light);
+            color: var(--primary-blue);
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .buy-btn:hover {
+            background-color: #DBEAFE;
+        }
+
+        /* --- 刷新图标通用样式 --- */
+        .icon-refresh {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            color: var(--text-sub);
+            transition: color 0.2s, transform 0.5s ease;
+        }
+        .icon-refresh:hover {
+            color: var(--primary-blue);
+            transform: rotate(180deg);
+        }
+        
+        /* 针对不同方案的特定调整 */
+        .scheme-tags {
+            position: absolute;
+            top: 10px; left: -140px;
+            text-align: right;
+            width: 120px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 方案一：顶部全局刷新 -->
+    <h2>方案一：放置在 Header (全局操作)</h2>
+    <div class="modal-card">
+        <div class="scheme-tags">
+            <strong>方案特点：</strong><br>
+            符合用户习惯<br>
+            不干扰数据展示<br>
+            最为稳妥
+        </div>
+        <div class="modal-header">
+            <div class="header-left">
+                <span>同步点数总览</span>
+                <!-- SVG Help Icon -->
+                <svg class="icon-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <!-- NEW: Refresh Icon here -->
+                <svg class="icon-refresh" title="刷新数据" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                
+                <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </div>
+        </div>
+
+        <div class="modal-body">
+            <!-- Chart Component -->
+            <div class="chart-container">
+                <svg viewBox="0 0 36 36" class="circular-chart">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle" stroke-dasharray="76, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div class="chart-text">
+                    <span class="chart-percent">76%</span>
+                    <span class="chart-label">已用</span>
+                </div>
+            </div>
+
+            <!-- Data Component -->
+            <div class="data-info">
+                <div class="info-header">
+                    <span class="sub-title">剩余可用点数</span>
+                    <div>
+                        <span class="big-number">24000</span>
+                        <span class="unit">点</span>
+                    </div>
+                </div>
+                <div class="legend-row">
+                    <span class="dot blue"></span>
+                    <span class="legend-label">已用</span>
+                    <span class="legend-value">76000 点</span>
+                </div>
+                <div class="legend-row">
+                    <span class="dot gray"></span>
+                    <span class="legend-label">总量</span>
+                    <span class="legend-value">100000 点</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="buy-btn">购买同步点数</button>
+        </div>
+    </div>
+
+    <!-- 方案二：数据区域上下文刷新 -->
+    <h2>方案二：放置在数据标题旁 (强关联)</h2>
+    <div class="modal-card">
+        <div class="scheme-tags">
+            <strong>方案特点：</strong><br>
+            强调“刷新点数”<br>
+            操作路径更短<br>
+            视觉重心集中
+        </div>
+        <div class="modal-header">
+             <div class="header-left">
+                <span>同步点数总览</span>
+                <svg class="icon-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+            <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </div>
+
+        <div class="modal-body">
+            <div class="chart-container">
+                <svg viewBox="0 0 36 36" class="circular-chart">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle" stroke-dasharray="76, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div class="chart-text">
+                    <span class="chart-percent">76%</span>
+                    <span class="chart-label">已用</span>
+                </div>
+            </div>
+
+            <div class="data-info">
+                <div class="info-header">
+                    <!-- NEW: Refresh Icon Grouped with Title -->
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="sub-title">剩余可用点数</span>
+                        <svg class="icon-refresh" style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    </div>
+                    <div>
+                        <span class="big-number">24000</span>
+                        <span class="unit">点</span>
+                    </div>
+                </div>
+                <div class="legend-row">
+                    <span class="dot blue"></span>
+                    <span class="legend-label">已用</span>
+                    <span class="legend-value">76000 点</span>
+                </div>
+                <div class="legend-row">
+                    <span class="dot gray"></span>
+                    <span class="legend-label">总量</span>
+                    <span class="legend-value">100000 点</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="buy-btn">购买同步点数</button>
+        </div>
+    </div>
+
+    <!-- 方案三：紧凑型布局 (集成在数值旁) -->
+    <h2>方案三：紧贴数值 (视觉引导)</h2>
+    <div class="modal-card">
+        <div class="scheme-tags">
+            <strong>方案特点：</strong><br>
+            如果用户最关注数值<br>
+            此处最符合直觉<br>
+            Icon做了淡化处理
+        </div>
+        <div class="modal-header">
+             <div class="header-left">
+                <span>同步点数总览</span>
+                <svg class="icon-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+            <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </div>
+
+        <div class="modal-body">
+            <div class="chart-container">
+                <svg viewBox="0 0 36 36" class="circular-chart">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle" stroke-dasharray="76, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div class="chart-text">
+                    <span class="chart-percent">76%</span>
+                    <span class="chart-label">已用</span>
+                </div>
+            </div>
+
+            <div class="data-info">
+                <div class="info-header">
+                    <span class="sub-title">剩余可用点数</span>
+                    <!-- NEW: Refresh Icon Next to the Big Number -->
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="big-number">24000</span>
+                        <span class="unit">点</span>
+                        <svg class="icon-refresh" style="color: #9CA3AF; margin-top: 4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    </div>
+                </div>
+                <div class="legend-row">
+                    <span class="dot blue"></span>
+                    <span class="legend-label">已用</span>
+                    <span class="legend-value">76000 点</span>
+                </div>
+                <div class="legend-row">
+                    <span class="dot gray"></span>
+                    <span class="legend-label">总量</span>
+                    <span class="legend-value">100000 点</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="buy-btn">购买同步点数</button>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>触发条件最终定稿预览</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: #f0f2f5; 
+            padding: 40px; 
+            color: #333; 
+        }
+        .config-card { 
+            background: #fff; 
+            padding: 32px; 
+            border-radius: 6px; 
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05); 
+            max-width: 800px; 
+            margin: 0 auto; 
+            border: 1px solid #ebeef5; 
+        }
+        
+        .form-row { display: flex; align-items: flex-start; }
+        .form-label { 
+            width: 100px; 
+            font-size: 14px; 
+            font-weight: 500; 
+            padding-top: 24px; 
+            color: #303133; 
+        }
+        .form-content { flex: 1; }
+        
+        /* 核心组合框 */
+        .trigger-group {
+            background: #fafafa; 
+            border: 1px solid #e4e7ed; 
+            border-radius: 4px; 
+            padding: 20px 24px;
+            margin-top: 14px;
+        }
+        
+        .rule-line { display: flex; align-items: center; color: #606266; font-size: 14px; }
+        .rule-line:not(:last-child) { margin-bottom: 20px; }
+        
+        /* 输入框样式 */
+        .ant-input { 
+            width: 140px; 
+            height: 32px; 
+            border: 1px solid #dcdfe6; 
+            border-radius: 4px; 
+            margin: 0 12px; 
+            padding: 0 12px; 
+            font-size: 14px; 
+            outline: none; 
+            transition: 0.3s; 
+            color: #303133;
+        }
+        .ant-input:focus { 
+            border-color: #3b66f5; 
+            box-shadow: 0 0 0 2px rgba(59, 102, 245, 0.1); 
+        }
+        .ant-input::placeholder { color: #c0c4cc; font-size: 13px; }
+        
+        /* "或" 标签 */
+        .or-badge { 
+            background: #f0f7ff; 
+            border: 1px solid #cce5ff; 
+            color: #1890ff; 
+            font-size: 12px; 
+            padding: 2px 8px; 
+            border-radius: 12px; 
+            margin-right: 16px; 
+            font-weight: bold; 
+        }
+
+        /* 底部提示文字区 */
+        .help-text { 
+            font-size: 13px; 
+            color: #909399; 
+            margin-top: 16px; 
+            padding-top: 16px; 
+            border-top: 1px dashed #e4e7ed;
+            display: flex; 
+            align-items: center;
+        }
+        .help-icon { 
+            color: #1890ff; 
+            margin-right: 8px; 
+            font-size: 16px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="config-card">
+
+        <div class="form-row">
+            <div class="form-label">触发条件</div>
+            <div class="form-content">
+                
+                <div class="trigger-group">
+                    
+                    <!-- 规则 1 -->
+                    <div class="rule-line">
+                        每 <input type="number" class="ant-input" value="100" min="1" placeholder="留空不启用"> 条数据触发一次
+                    </div>
+                    
+                    <!-- 规则 2 -->
+                    <div class="rule-line">
+                        <span class="or-badge">或</span> 
+                        每 <input type="number" class="ant-input" value="60" min="1" placeholder="留空不启用"> 秒触发一次
+                    </div>
+                    
+                    <!-- 🏆 您提炼的终极文案 -->
+                    <div class="help-text">
+                        <span class="help-icon">ℹ️</span>
+                        <span>请至少配置一项，为空代表该条件未启用，输入 1 为实时触发。</span>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大数据量选表交互方案对比</title>
+    <style>
+        :root {
+            --primary: #1890ff;
+            --border: #d9d9d9;
+            --bg: #f5f5f5;
+            --item-hover: #e6f7ff;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; padding: 20px; background: #f0f2f5; }
+        
+        h2 { font-size: 18px; margin-bottom: 10px; color: #333; }
+        p.desc { font-size: 14px; color: #666; margin-bottom: 20px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 8px 16px; cursor: pointer; border: 1px solid var(--border); background: white; border-radius: 4px; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .demo-container { display: none; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); height: 600px;}
+        .demo-container.active { display: flex; gap: 20px; }
+
+        /* Transfer Component Structure */
+        .transfer-panel { width: 350px; border: 1px solid var(--border); border-radius: 4px; display: flex; flex-direction: column; height: 100%; }
+        .panel-header { padding: 10px; border-bottom: 1px solid var(--border); background: #fafafa; font-weight: bold; display: flex; justify-content: space-between; align-items: center;}
+        .panel-search { padding: 10px; border-bottom: 1px solid var(--border); }
+        .panel-search input, .panel-search select { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 4px; }
+        
+        .panel-body { flex: 1; overflow-y: auto; position: relative; }
+        
+        /* List Items */
+        .list-item { padding: 8px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; }
+        .list-item:hover { background: var(--item-hover); }
+        .list-item span.desc { font-size: 12px; color: #999; margin-left: 8px; }
+        
+        /* Tree Items */
+        .tree-node { padding: 4px 0; }
+        .tree-content { padding: 6px 12px; cursor: pointer; display: flex; align-items: center; }
+        .tree-content:hover { background: var(--item-hover); }
+        .tree-arrow { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #999; transform: rotate(0deg); transition: transform 0.2s; margin-right: 4px;}
+        .tree-arrow.expanded { transform: rotate(90deg); }
+        .tree-children { padding-left: 24px; display: none; }
+        .tree-children.visible { display: block; }
+        .node-icon { margin-right: 6px; color: #faad14; } /* Folder icon color */
+        .table-icon { margin-right: 6px; color: var(--primary); } 
+
+        /* States */
+        .loading { text-align: center; padding: 20px; color: #999; font-size: 13px; }
+        .empty { text-align: center; padding: 20px; color: #ccc; }
+        .tag { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 12px; color: #666; }
+
+        /* Right Panel (Selected) */
+        .selected-list .list-item { cursor: default; }
+        .remove-btn { color: #ff4d4f; cursor: pointer; font-size: 18px; line-height: 1; margin-left: auto; }
+        .remove-btn:hover { color: #cf1322; }
+
+    </style>
+</head>
+<body>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('schemeA')">方案 A：混合模式 (推荐)</button>
+        <button class="tab-btn" onclick="switchTab('schemeB')">方案 B：分层级选择</button>
+    </div>
+
+    <!-- 方案 A：混合搜索模式 -->
+    <div id="schemeA" class="demo-container active">
+        <!-- 左侧源列表 -->
+        <div class="transfer-panel">
+            <div class="panel-header">
+                数据源表
+                <span class="tag">模式: 服务端搜索</span>
+            </div>
+            <div class="panel-search">
+                <input type="text" id="searchInputA" placeholder="输入关键词搜索全库 (如 'log')" oninput="handleSearchA(this.value)">
+            </div>
+            <div class="panel-body" id="sourceBodyA">
+                <!-- 默认展示树 -->
+                <div id="treeContainerA"></div>
+                <!-- 搜索时展示列表 -->
+                <div id="searchListContainerA" style="display:none;"></div>
+                <!-- Loading 遮罩 -->
+                <div id="loadingA" class="loading" style="display:none;">🔍 正在全库检索...</div>
+            </div>
+        </div>
+
+        <!-- 中间交换区 -->
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 0 10px; color: #999;">
+            ➔
+        </div>
+
+        <!-- 右侧已选 -->
+        <div class="transfer-panel">
+            <div class="panel-header">已选列表 (<span id="countA">0</span>)</div>
+            <div class="panel-body selected-list" id="targetBodyA">
+                <div class="empty">暂无选择</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 方案 B：分层级选择 -->
+    <div id="schemeB" class="demo-container">
+        <!-- 左侧源列表 -->
+        <div class="transfer-panel">
+            <div class="panel-header">
+                数据源选择
+                <span class="tag">模式: 级联选择</span>
+            </div>
+            
+            <!-- 结构调整：先选库 -->
+            <div style="padding: 10px; border-bottom: 1px solid #eee; background: #fffbe6;">
+                <label style="font-size: 12px; color: #666; display:block; margin-bottom:4px;">第一步：选择数据库</label>
+                <select id="dbSelectB" onchange="handleDbChangeB()" style="width: 100%; padding: 6px;">
+                    <option value="">-- 请选择数据库 --</option>
+                    <option value="db1">ODS_原始库 (240表)</option>
+                    <option value="db2">DWD_明细库 (150表)</option>
+                    <option value="db3">ADS_应用库 (80表)</option>
+                </select>
+            </div>
+
+            <div class="panel-search">
+                <input type="text" id="searchInputB" placeholder="在当前库中筛选..." oninput="handleLocalFilterB(this.value)" disabled>
+            </div>
+
+            <div class="panel-body" id="sourceBodyB">
+                <div class="empty" id="emptyB">请先选择上方的数据库</div>
+                <div id="listContainerB"></div>
+            </div>
+        </div>
+
+        <!-- 中间交换区 -->
+        <div style="display: flex; flex-direction: column; justify-content: center; padding: 0 10px; color: #999;">
+            ➔
+        </div>
+
+        <!-- 右侧已选 -->
+        <div class="transfer-panel">
+            <div class="panel-header">已选列表 (<span id="countB">0</span>)</div>
+            <div class="panel-body selected-list" id="targetBodyB">
+                <div class="empty">暂无选择</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ================= 公共逻辑 =================
+    const selectedItems = new Set(); // 存储已选 ID
+
+    function switchTab(id) {
+        document.querySelectorAll('.demo-container').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(id).classList.add('active');
+        // 找到对应的按钮高亮（简单处理）
+        event.target.classList.add('active');
+        
+        // 重置状态
+        selectedItems.clear();
+        updateSelectedView('targetBodyA', 'countA');
+        updateSelectedView('targetBodyB', 'countB');
+    }
+
+    function addToSelected(item, targetId, countId) {
+        if (selectedItems.has(item.id)) return;
+        selectedItems.add(item.id);
+        
+        const container = document.getElementById(targetId);
+        if (container.querySelector('.empty')) container.innerHTML = '';
+
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <div>
+                ${item.name}
+                <br><span style="font-size:11px; color:#999;">${item.path}</span>
+            </div>
+            <span class="remove-btn" onclick="removeFromSelected('${item.id}', this, '${targetId}', '${countId}')">×</span>
+        `;
+        container.appendChild(div);
+        document.getElementById(countId).innerText = selectedItems.size;
+    }
+
+    function removeFromSelected(id, btn, targetId, countId) {
+        selectedItems.delete(id);
+        btn.parentElement.remove();
+        document.getElementById(countId).innerText = selectedItems.size;
+        if (selectedItems.size === 0) {
+            document.getElementById(targetId).innerHTML = '<div class="empty">暂无选择</div>';
+        }
+    }
+
+    // ================= 模拟后端接口 =================
+    
+    // 模拟：获取根节点（库列表）
+    function apiGetDatabases() {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve([
+                    { id: 'db1', name: 'ODS_原始层', type: 'db' },
+                    { id: 'db2', name: 'DWD_明细层', type: 'db' },
+                    { id: 'db3', name: 'ADS_应用层', type: 'db' },
+                    { id: 'db4', name: 'DIM_维表层', type: 'db' }
+                ]);
+            }, 300);
+        });
+    }
+
+    // 模拟：异步加载子节点（表列表）
+    function apiGetTables(dbId) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                const tables = [];
+                for(let i=1; i<=20; i++) {
+                    tables.push({ 
+                        id: `${dbId}_table_${i}`, 
+                        name: `${dbId}_customer_log_${i}`, 
+                        type: 'table',
+                        path: dbId 
+                    });
+                }
+                resolve(tables);
+            }, 600); // 模拟网络延迟
+        });
+    }
+
+    // 模拟：服务端全量搜索（核心！！）
+    function apiSearchAll(keyword) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                if (!keyword) resolve([]);
+                // 这里模拟后端直接去 ElasticSearch 查回来了结果，涵盖了没展开的 DB3/DB4
+                const results = [];
+                ['db1', 'db2', 'db3', 'db4'].forEach(db => {
+                    results.push({
+                        id: `${db}_res_${keyword}`,
+                        name: `${db}_${keyword}_table`, // 强行匹配关键词
+                        path: db,
+                        type: 'table'
+                    });
+                });
+                resolve(results);
+            }, 800); // 搜索通常比加载树要慢一点点
+        });
+    }
+
+    // ================= 方案 A 逻辑 (混合模式) =================
+
+    let searchTimerA = null;
+
+    // 初始化渲染树
+    (async function initTreeA() {
+        const container = document.getElementById('treeContainerA');
+        const dbs = await apiGetDatabases();
+        dbs.forEach(db => {
+            const node = document.createElement('div');
+            node.className = 'tree-node';
+            node.innerHTML = `
+                <div class="tree-content">
+                    <span class="tree-arrow" onclick="toggleNode(this, '${db.id}')">▶</span>
+                    <span class="node-icon">📂</span>
+                    <span>${db.name}</span>
+                </div>
+                <div class="tree-children" id="children_${db.id}"></div>
+            `;
+            container.appendChild(node);
+        });
+    })();
+
+    // 树的展开/收起
+    async function toggleNode(arrow, dbId) {
+        const childrenDiv = document.getElementById(`children_${dbId}`);
+        const isExpanded = arrow.classList.contains('expanded');
+
+        if (isExpanded) {
+            arrow.classList.remove('expanded');
+            childrenDiv.classList.remove('visible');
+        } else {
+            arrow.classList.add('expanded');
+            childrenDiv.classList.add('visible');
+            
+            // 如果没加载过，去请求 (Lazy Load)
+            if (childrenDiv.innerHTML === '') {
+                childrenDiv.innerHTML = '<div style="padding-left:24px; color:#999;">Loading...</div>';
+                const tables = await apiGetTables(dbId);
+                childrenDiv.innerHTML = ''; // 清空loading
+                tables.forEach(tb => {
+                    const item = document.createElement('div');
+                    item.className = 'tree-content';
+                    item.style.paddingLeft = '44px';
+                    item.innerHTML = `<span class="table-icon">📄</span> ${tb.name}`;
+                    item.onclick = () => addToSelected(tb, 'targetBodyA', 'countA');
+                    childrenDiv.appendChild(item);
+                });
+            }
+        }
+    }
+
+    // A模式核心：搜索切换逻辑
+    function handleSearchA(val) {
+        const treeView = document.getElementById('treeContainerA');
+        const listView = document.getElementById('searchListContainerA');
+        const loading = document.getElementById('loadingA');
+
+        if (!val.trim()) {
+            // 没有关键词 -> 显示树，隐藏列表
+            treeView.style.display = 'block';
+            listView.style.display = 'none';
+            loading.style.display = 'none';
+            return;
+        }
+
+        // 有关键词 -> 隐藏树，显示 Loading
+        treeView.style.display = 'none';
+        listView.style.display = 'none';
+        loading.style.display = 'block';
+
+        // 防抖
+        if (searchTimerA) clearTimeout(searchTimerA);
+        searchTimerA = setTimeout(async () => {
+            const results = await apiSearchAll(val);
+            loading.style.display = 'none';
+            listView.style.display = 'block';
+            
+            if (results.length === 0) {
+                listView.innerHTML = '<div class="empty">未找到匹配的表</div>';
+            } else {
+                listView.innerHTML = '';
+                results.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'list-item';
+                    // 高亮关键词
+                    const nameHtml = item.name.replace(val, `<span style="color:red;">${val}</span>`);
+                    row.innerHTML = `
+                        <div>
+                            <span class="table-icon">📄</span> ${nameHtml}
+                        </div>
+                        <span class="desc">${item.path}</span>
+                    `;
+                    row.onclick = () => addToSelected(item, 'targetBodyA', 'countA');
+                    listView.appendChild(row);
+                });
+            }
+        }, 500);
+    }
+
+    // ================= 方案 B 逻辑 (分级选择) =================
+    
+    let currentTableListB = [];
+
+    async function handleDbChangeB() {
+        const select = document.getElementById('dbSelectB');
+        const dbId = select.value;
+        const container = document.getElementById('listContainerB');
+        const searchInput = document.getElementById('searchInputB');
+        const emptyTip = document.getElementById('emptyB');
+
+        if (!dbId) {
+            emptyTip.style.display = 'block';
+            container.innerHTML = '';
+            searchInput.disabled = true;
+            return;
+        }
+
+        // Loading 状态
+        emptyTip.style.display = 'none';
+        container.innerHTML = '<div class="loading">正在加载该库的表...</div>';
+        searchInput.disabled = false;
+        searchInput.value = ''; // 切换库清空搜索
+
+        // 请求数据
+        currentTableListB = await apiGetTables(dbId);
+        
+        renderListB(currentTableListB);
+    }
+
+    function renderListB(list) {
+        const container = document.getElementById('listContainerB');
+        container.innerHTML = '';
+        
+        if (list.length === 0) {
+            container.innerHTML = '<div class="empty">无匹配数据</div>';
+            return;
+        }
+
+        list.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `<span class="table-icon">📄</span> ${item.name}`;
+            div.onclick = () => addToSelected(item, 'targetBodyB', 'countB');
+            container.appendChild(div);
+        });
+    }
+
+    function handleLocalFilterB(val) {
+        // 纯前端过滤，因为范围已经缩小到单个库了
+        const filtered = currentTableListB.filter(t => t.name.includes(val));
+        renderListB(filtered);
+    }
+
+    function updateSelectedView(id, countId) {
+        // Helper to reset View
+    }
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据基础平台 - 企业级数据基础设施</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .intro {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 40px;
+            border-left: 5px solid #667eea;
+        }
+
+        .intro h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .intro p {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .feature-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .feature-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .feature-number {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .feature-title {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .feature-content {
+            color: #666;
+            line-height: 1.8;
+            font-size: 0.95em;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .tech-tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .header p {
+                font-size: 1em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>数据基础平台</h1>
+            <p>构建企业级数据基础设施，为多源异构数据提供分布式存储、湖仓一体、批流计算、存算一体、多租户管理及智能运维等核心能力</p>
+        </div>
+
+        <div class="content">
+            <div class="intro">
+                <h2>平台概述</h2>
+                <p>数据基础平台致力于构建企业级数据基础设施，为多源异构数据提供分布式存储、湖仓一体、批流计算、存算一体、多租户管理及智能运维等核心能力，支撑数据全生命周期的高效处理。平台全面兼容Hadoop生态组件，支持PB级数据存储和管理，具备完善的多租户、多项目、多环境支持能力，并提供可视化的运维管理界面，确保平台的高可用性和稳定性。</p>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-number">1</span>
+                    <div class="feature-title">Hadoop生态全面兼容</div>
+                    <div class="feature-content">
+                        数据基础平台全面兼容Hadoop生态组件及服务技术，支持以下组件的集成与协同运行：
+                        <div class="tech-stack">
+                            <span class="tech-tag">HBase</span>
+                            <span class="tech-tag">HDFS</span>
+                            <span class="tech-tag">MapReduce</span>
+                            <span class="tech-tag">Spark</span>
+                            <span class="tech-tag">Flink</span>
+                            <span class="tech-tag">Hive</span>
+                            <span class="tech-tag">Sqoop</span>
+                            <span class="tech-tag">Kafka</span>
+                        </div>
+                        确保与现有大数据技术栈无缝集成，降低迁移成本。
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">2</span>
+                    <div class="feature-title">湖仓一体数据架构</div>
+                    <div class="feature-content">
+                        具备湖仓一体数据架构，实现数据湖与数据仓库的深度融合：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li><strong>统一存储：</strong>提供统一的数据存储层，支持结构化、半结构化和非结构化数据</li>
+                            <li><strong>元数据管理：</strong>统一的元数据管理，实现数据资产的可视化和可追溯</li>
+                            <li><strong>数据安全治理：</strong>完善的数据安全策略，支持数据分类分级、访问控制、数据脱敏等</li>
+                            <li><strong>融合分析：</strong>支持实时分析和批处理分析，满足不同业务场景需求</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">3</span>
+                    <div class="feature-title">PB级数据存储和管理 <span class="badge">核心能力</span></div>
+                    <div class="feature-content">
+                        支持<span class="highlight">PB级数据存储和管理能力</span>，满足企业大规模数据存储需求：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>分布式存储架构，支持水平扩展</li>
+                            <li>高效的数据压缩和去重技术</li>
+                            <li>智能的数据生命周期管理</li>
+                            <li>高性能的数据读写能力</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">4</span>
+                    <div class="feature-title">多租户支持</div>
+                    <div class="feature-content">
+                        实现租户级资源和数据隔离，并允许租户自助管理：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li><strong>资源隔离：</strong>CPU、内存、存储等资源的租户级隔离</li>
+                            <li><strong>数据隔离：</strong>租户间数据完全隔离，保障数据安全</li>
+                            <li><strong>自助管理：</strong>租户可自主管理资源配额、用户权限等</li>
+                            <li><strong>计费统计：</strong>支持按租户进行资源使用统计和计费</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">5</span>
+                    <div class="feature-title">多项目支持</div>
+                    <div class="feature-content">
+                        支持多项目并行管理，为每个项目分配单独的资源和权限：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>项目级别的资源配额管理</li>
+                            <li>细粒度的权限控制，支持项目管理员、开发人员等角色</li>
+                            <li>项目间数据隔离和访问控制</li>
+                            <li>项目级别的监控和审计</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">6</span>
+                    <div class="feature-title">多环境支持</div>
+                    <div class="feature-content">
+                        支持开发、测试、生产等环境，并支持配置及数据等资源在多环境中进行快速流转或迁移：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>环境隔离，确保各环境数据安全</li>
+                            <li>配置和数据的快速迁移能力</li>
+                            <li>开发、测试环境支持免费试用授权</li>
+                            <li>支持每隔半年激活试用授权的申请</li>
+                            <li>环境间的一键部署和同步</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">7</span>
+                    <div class="feature-title">多集群集中管控 <span class="badge">核心能力</span></div>
+                    <div class="feature-content">
+                        <span class="highlight">支持多集群集中管控</span>，可在同一平台上管理多套集群：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>统一的集群管理界面，集中管理多套集群</li>
+                            <li>集群间的快速切换，提升管理效率</li>
+                            <li>跨集群的统一操作，批量管理多个集群</li>
+                            <li>集群健康状态统一监控</li>
+                            <li>跨集群资源调度和负载均衡</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">8</span>
+                    <div class="feature-title">集群弹性伸缩</div>
+                    <div class="feature-content">
+                        支持集群弹性伸缩，可在不停机情况下完成平台扩容与升级：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>在线扩容，无需停机即可扩展集群规模</li>
+                            <li>功能组件角色新增，灵活添加新组件</li>
+                            <li>自动负载均衡，新节点自动加入集群</li>
+                            <li>缩容保护，确保数据安全的前提下进行缩容</li>
+                            <li>满足业务增长需求，支持动态调整</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">9</span>
+                    <div class="feature-title">可视化运维管理</div>
+                    <div class="feature-content">
+                        支持通过可视化界面实现集群全量大数据组件的常规运维操作：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>组件服务及实例的启动、停止、重启</li>
+                            <li>组件扩容、缩容操作</li>
+                            <li>配置管理和热更新</li>
+                            <li>服务健康检查</li>
+                            <li>简化运维流程，降低运维门槛</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">10</span>
+                    <div class="feature-title">异常节点快速恢复</div>
+                    <div class="feature-content">
+                        支持异常节点快速恢复，保障集群稳定性：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>节点服务的停止、启动、重启操作</li>
+                            <li>滚动重启，确保服务不中断</li>
+                            <li>自动故障检测和恢复</li>
+                            <li>节点健康状态实时监控</li>
+                            <li>快速定位和修复问题</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">11</span>
+                    <div class="feature-title">实时监控与告警</div>
+                    <div class="feature-content">
+                        支持对集群、节点服务器、组件、中间件、数据库等资源进行实时监控：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>全方位的资源监控，覆盖所有关键指标</li>
+                            <li>预设告警策略，自定义告警规则</li>
+                            <li>多渠道告警通知：邮箱、Webhook等</li>
+                            <li>告警级别分类，重要告警优先处理</li>
+                            <li>告警历史记录和统计分析</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">12</span>
+                    <div class="feature-title">自动化运维脚本</div>
+                    <div class="feature-content">
+                        支持自动化运维脚本及批量操作，提升日常运维管理效率：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>自定义运维脚本，支持常用运维操作</li>
+                            <li>批量操作，同时管理多个节点或组件</li>
+                            <li>定时任务，自动化执行运维任务</li>
+                            <li>脚本模板库，快速复用常用脚本</li>
+                            <li>减少人工操作失误，提高运维效率</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">13</span>
+                    <div class="feature-title">日志管理与审计</div>
+                    <div class="feature-content">
+                        具备完善的日志管理及审计功能，满足合规性与安全管理要求：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>全流程操作记录，包括平台操作、数据访问、系统事件</li>
+                            <li>日志集中存储，统一管理所有日志</li>
+                            <li>强大的日志检索和分析能力</li>
+                            <li>日志保留策略，满足合规要求</li>
+                            <li>审计报告生成，支持合规审计</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">14</span>
+                    <div class="feature-title">身份认证与权限管理</div>
+                    <div class="feature-content">
+                        支持多种身份认证与权限管理机制，保障平台安全性：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>LDAP集成，与企业AD域无缝对接</li>
+                            <li>OAuth认证，支持第三方身份认证</li>
+                            <li>用户身份统一认证，单点登录</li>
+                            <li>细粒度权限控制，精确到资源级别</li>
+                            <li>角色管理，灵活的权限分配机制</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">15</span>
+                    <div class="feature-title">高可用架构设计</div>
+                    <div class="feature-content">
+                        平台支持高可用架构设计，确保关键服务的持续稳定运行：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>主备切换，自动故障转移</li>
+                            <li>故障自动检测和恢复</li>
+                            <li>数据冗余备份，保障数据安全</li>
+                            <li>服务无单点故障</li>
+                            <li>RTO/RPO指标保障，满足业务连续性要求</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-number">16</span>
+                    <div class="feature-title">资源配额与用量统计</div>
+                    <div class="feature-content">
+                        支持资源配额与用量统计分析，便于合理分配与成本管控：
+                        <ul style="margin-top: 10px; padding-left: 20px; color: #666;">
+                            <li>实时监控各租户和项目的资源使用情况</li>
+                            <li>资源配额设置和预警</li>
+                            <li>详细的用量统计报表</li>
+                            <li>成本分析和预测</li>
+                            <li>资源优化建议，提升资源利用率</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2026 数据基础平台 - 企业级数据基础设施解决方案</p>
+            <p style="margin-top: 10px; opacity: 0.8; font-size: 0.9em;">构建高效、安全、可靠的数据治理与智能分析平台</p>
+        </div>
+    </div>
+</body>
+</html>

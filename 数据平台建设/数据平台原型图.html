@@ -1,0 +1,3024 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据平台 - 产品原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* 顶部导航栏 */
+        .topbar {
+            height: 60px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1890ff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #1890ff, #096dd9);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .env-selector {
+            padding: 6px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #fafafa;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .user-info:hover {
+            background: #f5f5f5;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #1890ff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* 主容器 */
+        .container {
+            display: flex;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 240px;
+            background: #001529;
+            color: #fff;
+            position: fixed;
+            left: 0;
+            top: 60px;
+            bottom: 0;
+            overflow-y: auto;
+            transition: all 0.3s;
+        }
+
+        .menu-group {
+            padding: 16px 0;
+        }
+
+        .menu-title {
+            padding: 8px 24px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.65);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .menu-item {
+            padding: 12px 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+            color: rgba(255,255,255,0.85);
+            font-size: 14px;
+        }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .menu-item.active {
+            background: #1890ff;
+            color: #fff;
+        }
+
+        .menu-icon {
+            width: 16px;
+            text-align: center;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            margin-left: 240px;
+            flex: 1;
+            padding: 24px;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 页面标题 */
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 8px;
+        }
+
+        .page-desc {
+            color: #8c8c8c;
+            font-size: 14px;
+        }
+
+        /* 卡片 */
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+        }
+
+        /* 按钮 */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #1890ff;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #40a9ff;
+        }
+
+        .btn-default {
+            background: #fff;
+            color: #262626;
+            border: 1px solid #d9d9d9;
+        }
+
+        .btn-default:hover {
+            border-color: #40a9ff;
+            color: #40a9ff;
+        }
+
+        .btn-success {
+            background: #52c41a;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: #ff4d4f;
+            color: #fff;
+        }
+
+        /* 表格 */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #262626;
+            font-size: 14px;
+        }
+
+        td {
+            font-size: 14px;
+            color: #595959;
+        }
+
+        tr:hover {
+            background: #fafafa;
+        }
+
+        /* 状态标签 */
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+
+        .status-warning {
+            background: #fffbe6;
+            color: #faad14;
+            border: 1px solid #ffe58f;
+        }
+
+        .status-error {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+
+        .status-info {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-card.blue {
+            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+        }
+
+        .stat-card.green {
+            background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+            box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+        }
+
+        .stat-card.orange {
+            background: linear-gradient(135deg, #fa8c16 0%, #d46b08 100%);
+            box-shadow: 0 4px 12px rgba(250, 140, 22, 0.3);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* 表单 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #262626;
+            font-size: 14px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #40a9ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+
+        /* 搜索框 */
+        .search-box {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        /* 操作按钮组 */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 4px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .action-btn-edit {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .action-btn-delete {
+            background: #fff2f0;
+            color: #ff4d4f;
+        }
+
+        .action-btn-view {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        /* 图表容器 */
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        /* 标签页 */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: #595959;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #1890ff;
+        }
+
+        .tab.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+            font-weight: 600;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #fff;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            cursor: pointer;
+            font-size: 20px;
+            color: #8c8c8c;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* DAG画布 */
+        .dag-canvas {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            background: #fafafa;
+            position: relative;
+            overflow: auto;
+        }
+
+        .dag-node {
+            position: absolute;
+            width: 120px;
+            height: 60px;
+            background: #fff;
+            border: 2px solid #1890ff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .dag-node:hover {
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+        }
+
+        /* 工具栏 */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #1890ff;
+            transition: width 0.3s;
+        }
+
+        /* 时间线 */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 24px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -25px;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #1890ff;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 2px #1890ff;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: -19px;
+            top: 20px;
+            width: 2px;
+            height: calc(100% - 8px);
+            background: #e8e8e8;
+        }
+
+        .timeline-item:last-child::after {
+            display: none;
+        }
+
+        .timeline-content {
+            background: #fafafa;
+            padding: 12px 16px;
+            border-radius: 4px;
+        }
+
+        .timeline-time {
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-bottom: 4px;
+        }
+
+        .timeline-text {
+            font-size: 14px;
+            color: #262626;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="topbar">
+        <div class="logo">
+            <div class="logo-icon">数</div>
+            <span>数据平台</span>
+        </div>
+        <div class="topbar-right">
+            <select class="env-selector">
+                <option>开发环境</option>
+                <option>测试环境</option>
+                <option>生产环境</option>
+            </select>
+            <div class="user-info">
+                <div class="avatar">管</div>
+                <span>管理员</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 侧边栏菜单 -->
+        <div class="sidebar">
+            <div class="menu-group">
+                <div class="menu-item active" onclick="showPage('dashboard')">
+                    <span class="menu-icon">📊</span>
+                    <span>工作台</span>
+                </div>
+            </div>
+            <div class="menu-group">
+                <div class="menu-title">数据基础平台</div>
+                <div class="menu-item" onclick="showPage('cluster')">
+                    <span class="menu-icon">🖥️</span>
+                    <span>集群管理</span>
+                </div>
+                <div class="menu-item" onclick="showPage('monitor')">
+                    <span class="menu-icon">📈</span>
+                    <span>监控告警</span>
+                </div>
+                <div class="menu-item" onclick="showPage('resource')">
+                    <span class="menu-icon">💾</span>
+                    <span>资源管理</span>
+                </div>
+            </div>
+            <div class="menu-group">
+                <div class="menu-title">数据采集</div>
+                <div class="menu-item" onclick="showPage('datasource')">
+                    <span class="menu-icon">🔌</span>
+                    <span>数据源管理</span>
+                </div>
+                <div class="menu-item" onclick="showPage('collection')">
+                    <span class="menu-icon">📥</span>
+                    <span>采集任务</span>
+                </div>
+            </div>
+            <div class="menu-group">
+                <div class="menu-title">数据开发</div>
+                <div class="menu-item" onclick="showPage('offline-dev')">
+                    <span class="menu-icon">⚙️</span>
+                    <span>离线开发</span>
+                </div>
+                <div class="menu-item" onclick="showPage('realtime-dev')">
+                    <span class="menu-icon">⚡</span>
+                    <span>实时开发</span>
+                </div>
+                <div class="menu-item" onclick="showPage('schedule')">
+                    <span class="menu-icon">📅</span>
+                    <span>任务调度</span>
+                </div>
+            </div>
+            <div class="menu-group">
+                <div class="menu-title">数据治理</div>
+                <div class="menu-item" onclick="showPage('metadata')">
+                    <span class="menu-icon">📋</span>
+                    <span>元数据管理</span>
+                </div>
+                <div class="menu-item" onclick="showPage('quality')">
+                    <span class="menu-icon">✅</span>
+                    <span>数据质量</span>
+                </div>
+                <div class="menu-item" onclick="showPage('security')">
+                    <span class="menu-icon">🔒</span>
+                    <span>数据安全</span>
+                </div>
+                <div class="menu-item" onclick="showPage('asset')">
+                    <span class="menu-icon">📦</span>
+                    <span>数据资产</span>
+                </div>
+            </div>
+            <div class="menu-group">
+                <div class="menu-title">数据服务</div>
+                <div class="menu-item" onclick="showPage('api')">
+                    <span class="menu-icon">🔗</span>
+                    <span>API管理</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 工作台 -->
+            <div id="dashboard" class="page active">
+                <div class="page-header">
+                    <div class="page-title">工作台</div>
+                    <div class="page-desc">数据平台整体运行概览</div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-value">4</div>
+                        <div class="stat-label">运行中集群</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-value">156</div>
+                        <div class="stat-label">数据源连接</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-value">2.8PB</div>
+                        <div class="stat-label">数据存储总量</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1,234</div>
+                        <div class="stat-label">运行中任务</div>
+                    </div>
+                    <div class="stat-card blue">
+                        <div class="stat-value">89</div>
+                        <div class="stat-label">数据表总数</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-value">156</div>
+                        <div class="stat-label">数据质量规则</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-value">45</div>
+                        <div class="stat-label">API接口数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">98.5%</div>
+                        <div class="stat-label">数据质量得分</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">系统运行状态</div>
+                    </div>
+                    <div class="chart-container" style="display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 4px;">
+                        <div style="text-align: center; color: #8c8c8c;">
+                            <div style="font-size: 48px; margin-bottom: 8px;">📊</div>
+                            <div>系统运行正常</div>
+                            <div style="font-size: 12px; margin-top: 8px;">CPU: 45% | 内存: 62% | 磁盘: 78%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">最近任务</div>
+                            <button class="btn btn-default">查看全部</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>任务名称</th>
+                                        <th>类型</th>
+                                        <th>状态</th>
+                                        <th>执行时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>用户数据同步</td>
+                                    <td>数据采集</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>2分钟前</td>
+                                </tr>
+                                <tr>
+                                    <td>订单数据清洗</td>
+                                    <td>离线开发</td>
+                                    <td><span class="status-badge status-info">运行中</span></td>
+                                    <td>5分钟前</td>
+                                </tr>
+                                <tr>
+                                    <td>实时日志处理</td>
+                                    <td>实时开发</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>10分钟前</td>
+                                </tr>
+                                <tr>
+                                    <td>商品信息聚合</td>
+                                    <td>离线开发</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>15分钟前</td>
+                                </tr>
+                                <tr>
+                                    <td>支付数据同步</td>
+                                    <td>数据采集</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>20分钟前</td>
+                                </tr>
+                                <tr>
+                                    <td>用户画像计算</td>
+                                    <td>离线开发</td>
+                                    <td><span class="status-badge status-warning">警告</span></td>
+                                    <td>25分钟前</td>
+                                </tr>
+                                <tr>
+                                    <td>库存数据更新</td>
+                                    <td>实时开发</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>30分钟前</td>
+                                </tr>
+                                <tr>
+                                    <td>日志数据归档</td>
+                                    <td>数据采集</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>1小时前</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">告警信息</div>
+                            <button class="btn btn-default">查看全部</button>
+                        </div>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-content">
+                                    <div class="timeline-time">10:30</div>
+                                    <div class="timeline-text">集群节点 node-03 内存使用率超过 85%</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-content">
+                                    <div class="timeline-time">09:15</div>
+                                    <div class="timeline-text">数据采集任务 "订单同步" 执行失败</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-content">
+                                    <div class="timeline-time">08:00</div>
+                                    <div class="timeline-text">数据质量规则 "用户表完整性" 检测异常</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-content">
+                                    <div class="timeline-time">07:45</div>
+                                    <div class="timeline-text">API接口 "/api/v1/user" 响应时间超过阈值</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-content">
+                                    <div class="timeline-time">07:20</div>
+                                    <div class="timeline-text">数据源 "MySQL-生产库" 连接异常，已自动重连</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-content">
+                                    <div class="timeline-time">06:50</div>
+                                    <div class="timeline-text">实时任务 "订单实时处理" 延迟超过 200ms</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-content">
+                                    <div class="timeline-time">06:00</div>
+                                    <div class="timeline-text">集群节点 node-05 磁盘使用率超过 90%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据源管理 -->
+            <div id="datasource" class="page">
+                <div class="page-header">
+                    <div class="page-title">数据源管理</div>
+                    <div class="page-desc">统一管理内外部各类结构化、半结构化和非结构化数据源</div>
+                </div>
+
+                <div class="toolbar">
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="搜索数据源名称、类型...">
+                        <button class="btn btn-primary">搜索</button>
+                    </div>
+                    <button class="btn btn-primary" onclick="showModal('addDatasourceModal')">+ 新建数据源</button>
+                </div>
+
+                <div class="card">
+                    <div class="tabs">
+                        <div class="tab active">全部 (156)</div>
+                        <div class="tab">数据库 (89)</div>
+                        <div class="tab">文件 (32)</div>
+                        <div class="tab">接口 (25)</div>
+                        <div class="tab">大数据平台 (10)</div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>数据源名称</th>
+                                    <th>类型</th>
+                                    <th>连接地址</th>
+                                    <th>状态</th>
+                                    <th>最后测试时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>MySQL-生产库</td>
+                                    <td>MySQL</td>
+                                    <td>192.168.1.100:3306</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>2024-01-27 10:30:25</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Oracle-业务库</td>
+                                    <td>Oracle</td>
+                                    <td>192.168.1.101:1521</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>2024-01-27 10:28:15</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>PostgreSQL-分析库</td>
+                                    <td>PostgreSQL</td>
+                                    <td>192.168.1.104:5432</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>2024-01-27 10:20:10</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>SQL Server-报表库</td>
+                                    <td>SQL Server</td>
+                                    <td>192.168.1.105:1433</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>2024-01-27 10:15:30</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>HDFS-数据湖</td>
+                                    <td>HDFS</td>
+                                    <td>hdfs://namenode:9000</td>
+                                    <td><span class="status-badge status-warning">警告</span></td>
+                                    <td>2024-01-27 09:15:30</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Hive-数据仓库</td>
+                                    <td>Hive</td>
+                                    <td>hive://hiveserver:10000</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>2024-01-27 10:10:20</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Kafka-消息队列</td>
+                                    <td>Kafka</td>
+                                    <td>192.168.1.102:9092</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>2024-01-27 10:25:10</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>ClickHouse-分析库</td>
+                                    <td>ClickHouse</td>
+                                    <td>192.168.1.106:8123</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>2024-01-27 10:05:15</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>FTP-文件服务器</td>
+                                    <td>FTP</td>
+                                    <td>ftp://192.168.1.103:21</td>
+                                    <td><span class="status-badge status-error">异常</span></td>
+                                    <td>2024-01-27 08:00:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>S3-对象存储</td>
+                                    <td>S3</td>
+                                    <td>s3://bucket-name</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>2024-01-27 10:00:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Elasticsearch-搜索</td>
+                                    <td>Elasticsearch</td>
+                                    <td>192.168.1.107:9200</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>2024-01-27 09:55:30</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>MongoDB-文档库</td>
+                                    <td>MongoDB</td>
+                                    <td>192.168.1.108:27017</td>
+                                    <td><span class="status-badge status-warning">警告</span></td>
+                                    <td>2024-01-27 09:50:20</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 采集任务 -->
+            <div id="collection" class="page">
+                <div class="page-header">
+                    <div class="page-title">采集任务</div>
+                    <div class="page-desc">配置和管理数据采集任务，支持全量和增量采集</div>
+                </div>
+
+                <div class="toolbar">
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="搜索任务名称...">
+                        <button class="btn btn-primary">搜索</button>
+                    </div>
+                    <button class="btn btn-primary" onclick="showModal('addCollectionModal')">+ 新建采集任务</button>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>任务名称</th>
+                                    <th>数据源</th>
+                                    <th>目标库</th>
+                                    <th>采集模式</th>
+                                    <th>调度周期</th>
+                                    <th>状态</th>
+                                    <th>最后执行时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>用户数据同步</td>
+                                    <td>MySQL-生产库</td>
+                                    <td>Hive-ODS</td>
+                                    <td>增量采集</td>
+                                    <td>每小时</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>2024-01-27 10:00:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>订单数据全量同步</td>
+                                    <td>Oracle-业务库</td>
+                                    <td>Hive-DWD</td>
+                                    <td>全量采集</td>
+                                    <td>每天 02:00</td>
+                                    <td><span class="status-badge status-info">待执行</span></td>
+                                    <td>2024-01-27 02:00:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>商品信息同步</td>
+                                    <td>MySQL-生产库</td>
+                                    <td>Hive-ODS</td>
+                                    <td>增量采集</td>
+                                    <td>每30分钟</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>2024-01-27 10:30:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>支付数据同步</td>
+                                    <td>PostgreSQL-分析库</td>
+                                    <td>Hive-DWD</td>
+                                    <td>增量采集</td>
+                                    <td>每小时</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>2024-01-27 10:00:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>库存数据同步</td>
+                                    <td>SQL Server-报表库</td>
+                                    <td>Hive-ODS</td>
+                                    <td>增量采集</td>
+                                    <td>每15分钟</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>2024-01-27 10:45:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>日志文件采集</td>
+                                    <td>FTP-文件服务器</td>
+                                    <td>HDFS-数据湖</td>
+                                    <td>实时采集</td>
+                                    <td>实时</td>
+                                    <td><span class="status-badge status-error">失败</span></td>
+                                    <td>2024-01-27 08:00:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">重试</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>用户行为数据采集</td>
+                                    <td>Kafka-消息队列</td>
+                                    <td>HDFS-数据湖</td>
+                                    <td>实时采集</td>
+                                    <td>实时</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>2024-01-27 10:50:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>历史数据归档</td>
+                                    <td>Hive-数据仓库</td>
+                                    <td>S3-对象存储</td>
+                                    <td>全量采集</td>
+                                    <td>每周日 03:00</td>
+                                    <td><span class="status-badge status-info">待执行</span></td>
+                                    <td>2024-01-21 03:00:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>外部API数据采集</td>
+                                    <td>HTTP接口</td>
+                                    <td>Hive-ODS</td>
+                                    <td>增量采集</td>
+                                    <td>每天 01:00</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>2024-01-27 01:00:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 离线开发 -->
+            <div id="offline-dev" class="page">
+                <div class="page-header">
+                    <div class="page-title">离线开发</div>
+                    <div class="page-desc">通过DAG可视化开发，支持流批一体的数据开发功能</div>
+                </div>
+
+                <div class="toolbar">
+                    <button class="btn btn-primary" onclick="showPage('dag-editor')">+ 新建任务</button>
+                    <button class="btn btn-default">导入模板</button>
+                    <button class="btn btn-default">批量操作</button>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>任务名称</th>
+                                    <th>任务类型</th>
+                                    <th>分层模型</th>
+                                    <th>状态</th>
+                                    <th>最后运行时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>用户数据清洗</td>
+                                    <td>数据清洗</td>
+                                    <td>ODS → DWD</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>2024-01-27 10:30:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">运行</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>订单数据聚合</td>
+                                    <td>数据聚合</td>
+                                    <td>DWD → DWS</td>
+                                    <td><span class="status-badge status-info">运行中</span></td>
+                                    <td>2024-01-27 10:25:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>商品信息转换</td>
+                                    <td>数据转换</td>
+                                    <td>ODS → DWD</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>2024-01-27 10:20:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">运行</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>用户画像计算</td>
+                                    <td>数据挖掘</td>
+                                    <td>DWS → ADS</td>
+                                    <td><span class="status-badge status-warning">警告</span></td>
+                                    <td>2024-01-27 10:15:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>销售数据汇总</td>
+                                    <td>数据聚合</td>
+                                    <td>DWD → DWS</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>2024-01-27 10:10:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">运行</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>库存数据关联</td>
+                                    <td>数据关联</td>
+                                    <td>DWD → DWS</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>2024-01-27 10:05:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">运行</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>支付数据去重</td>
+                                    <td>数据清洗</td>
+                                    <td>ODS → DWD</td>
+                                    <td><span class="status-badge status-success">成功</span></td>
+                                    <td>2024-01-27 10:00:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">运行</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>推荐算法训练</td>
+                                    <td>机器学习</td>
+                                    <td>DWS → ADS</td>
+                                    <td><span class="status-badge status-info">运行中</span></td>
+                                    <td>2024-01-27 09:50:00</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DAG编辑器 -->
+            <div id="dag-editor" class="page">
+                <div class="page-header">
+                    <div class="page-title">DAG任务编辑器</div>
+                    <div class="page-desc">拖拽式可视化设计数据加工流程</div>
+                </div>
+
+                <div class="toolbar">
+                    <button class="btn btn-primary">保存</button>
+                    <button class="btn btn-success">运行</button>
+                    <button class="btn btn-default">仿真计算</button>
+                    <button class="btn btn-default">查看血缘</button>
+                </div>
+
+                <div class="card">
+                    <div class="dag-canvas" id="dagCanvas">
+                        <div class="dag-node" style="top: 50px; left: 100px;">数据源</div>
+                        <div class="dag-node" style="top: 50px; left: 300px;">数据清洗</div>
+                        <div class="dag-node" style="top: 50px; left: 500px;">数据转换</div>
+                        <div class="dag-node" style="top: 50px; left: 700px;">数据输出</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">算子库</div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                            <div style="padding: 12px; background: #fafafa; border-radius: 4px; text-align: center; cursor: pointer;">
+                                <div style="font-size: 24px; margin-bottom: 4px;">🔍</div>
+                                <div style="font-size: 12px;">数据清洗</div>
+                            </div>
+                            <div style="padding: 12px; background: #fafafa; border-radius: 4px; text-align: center; cursor: pointer;">
+                                <div style="font-size: 24px; margin-bottom: 4px;">🔄</div>
+                                <div style="font-size: 12px;">数据转换</div>
+                            </div>
+                            <div style="padding: 12px; background: #fafafa; border-radius: 4px; text-align: center; cursor: pointer;">
+                                <div style="font-size: 24px; margin-bottom: 4px;">📊</div>
+                                <div style="font-size: 12px;">数据聚合</div>
+                            </div>
+                            <div style="padding: 12px; background: #fafafa; border-radius: 4px; text-align: center; cursor: pointer;">
+                                <div style="font-size: 24px; margin-bottom: 4px;">🔗</div>
+                                <div style="font-size: 12px;">JOIN</div>
+                            </div>
+                            <div style="padding: 12px; background: #fafafa; border-radius: 4px; text-align: center; cursor: pointer;">
+                                <div style="font-size: 24px; margin-bottom: 4px;">📝</div>
+                                <div style="font-size: 12px;">SQL脚本</div>
+                            </div>
+                            <div style="padding: 12px; background: #fafafa; border-radius: 4px; text-align: center; cursor: pointer;">
+                                <div style="font-size: 24px; margin-bottom: 4px;">🐍</div>
+                                <div style="font-size: 12px;">Python</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">任务属性</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">任务名称</label>
+                            <input type="text" class="form-input" value="用户数据清洗任务">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">分层模型</label>
+                            <select class="form-select">
+                                <option>ODS → DWD</option>
+                                <option>DWD → DWS</option>
+                                <option>DWS → ADS</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">描述</label>
+                            <textarea class="form-input" rows="3" placeholder="请输入任务描述..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 实时开发 -->
+            <div id="realtime-dev" class="page">
+                <div class="page-header">
+                    <div class="page-title">实时开发</div>
+                    <div class="page-desc">基于Flink CDC的实时数据处理任务</div>
+                </div>
+
+                <div class="toolbar">
+                    <button class="btn btn-primary">+ 新建实时任务</button>
+                    <button class="btn btn-default">导入任务</button>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>任务名称</th>
+                                    <th>数据源</th>
+                                    <th>处理模式</th>
+                                    <th>状态</th>
+                                    <th>延迟</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>订单实时处理</td>
+                                    <td>MySQL CDC</td>
+                                    <td>流式处理</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>50ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">监控</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>日志实时清洗</td>
+                                    <td>Kafka</td>
+                                    <td>流式处理</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>120ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">监控</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>用户行为实时分析</td>
+                                    <td>Kafka</td>
+                                    <td>流式处理</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>85ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">监控</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>库存实时更新</td>
+                                    <td>Oracle CDC</td>
+                                    <td>流式处理</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>65ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">监控</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>支付实时统计</td>
+                                    <td>Kafka</td>
+                                    <td>流式处理</td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>95ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">监控</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>商品价格实时同步</td>
+                                    <td>MySQL CDC</td>
+                                    <td>流式处理</td>
+                                    <td><span class="status-badge status-warning">警告</span></td>
+                                    <td>250ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">监控</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">停止</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务调度 -->
+            <div id="schedule" class="page">
+                <div class="page-header">
+                    <div class="page-title">任务调度</div>
+                    <div class="page-desc">管理和监控任务调度执行情况</div>
+                </div>
+
+                <div class="card">
+                    <div class="tabs">
+                        <div class="tab active">调度任务</div>
+                        <div class="tab">执行历史</div>
+                        <div class="tab">依赖关系</div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>任务名称</th>
+                                    <th>调度周期</th>
+                                    <th>下次执行时间</th>
+                                    <th>状态</th>
+                                    <th>执行次数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>用户数据同步</td>
+                                    <td>每小时</td>
+                                    <td>2024-01-27 11:00:00</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>1,234</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>订单数据清洗</td>
+                                    <td>每天 02:00</td>
+                                    <td>2024-01-28 02:00:00</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>365</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>商品信息同步</td>
+                                    <td>每30分钟</td>
+                                    <td>2024-01-27 11:30:00</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>2,468</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>支付数据聚合</td>
+                                    <td>每小时</td>
+                                    <td>2024-01-27 11:00:00</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>876</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>库存数据更新</td>
+                                    <td>每15分钟</td>
+                                    <td>2024-01-27 11:15:00</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>5,678</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>用户画像计算</td>
+                                    <td>每天 03:00</td>
+                                    <td>2024-01-28 03:00:00</td>
+                                    <td><span class="status-badge status-warning">警告</span></td>
+                                    <td>89</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>数据质量检查</td>
+                                    <td>每天 01:00</td>
+                                    <td>2024-01-28 01:00:00</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>156</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>周报数据汇总</td>
+                                    <td>每周一 08:00</td>
+                                    <td>2024-01-29 08:00:00</td>
+                                    <td><span class="status-badge status-success">正常</span></td>
+                                    <td>52</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 集群管理 -->
+            <div id="cluster" class="page">
+                <div class="page-header">
+                    <div class="page-title">集群管理</div>
+                    <div class="page-desc">多集群集中管控，支持集群间的快速切换与统一操作</div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-value">3</div>
+                        <div class="stat-label">运行中集群</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-value">24</div>
+                        <div class="stat-label">总节点数</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-value">2.8PB</div>
+                        <div class="stat-label">存储总量</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">集群列表</div>
+                        <button class="btn btn-primary">+ 新建集群</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>集群名称</th>
+                                    <th>节点数</th>
+                                    <th>存储容量</th>
+                                    <th>CPU使用率</th>
+                                    <th>内存使用率</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>生产集群-01</td>
+                                    <td>12</td>
+                                    <td>1.2PB / 2PB</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 65%"></div>
+                                        </div>
+                                        <span style="font-size: 12px; color: #8c8c8c;">65%</span>
+                                    </td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 78%"></div>
+                                        </div>
+                                        <span style="font-size: 12px; color: #8c8c8c;">78%</span>
+                                    </td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">详情</button>
+                                            <button class="action-btn action-btn-edit">管理</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>生产集群-02</td>
+                                    <td>16</td>
+                                    <td>1.5PB / 2.5PB</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 72%"></div>
+                                        </div>
+                                        <span style="font-size: 12px; color: #8c8c8c;">72%</span>
+                                    </td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 81%"></div>
+                                        </div>
+                                        <span style="font-size: 12px; color: #8c8c8c;">81%</span>
+                                    </td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">详情</button>
+                                            <button class="action-btn action-btn-edit">管理</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>测试集群-01</td>
+                                    <td>8</td>
+                                    <td>800GB / 1TB</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 45%"></div>
+                                        </div>
+                                        <span style="font-size: 12px; color: #8c8c8c;">45%</span>
+                                    </td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 62%"></div>
+                                        </div>
+                                        <span style="font-size: 12px; color: #8c8c8c;">62%</span>
+                                    </td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">详情</button>
+                                            <button class="action-btn action-btn-edit">管理</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>开发集群-01</td>
+                                    <td>4</td>
+                                    <td>200GB / 500GB</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 38%"></div>
+                                        </div>
+                                        <span style="font-size: 12px; color: #8c8c8c;">38%</span>
+                                    </td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 55%"></div>
+                                        </div>
+                                        <span style="font-size: 12px; color: #8c8c8c;">55%</span>
+                                    </td>
+                                    <td><span class="status-badge status-success">运行中</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">详情</button>
+                                            <button class="action-btn action-btn-edit">管理</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 监控告警 -->
+            <div id="monitor" class="page">
+                <div class="page-header">
+                    <div class="page-title">监控告警</div>
+                    <div class="page-desc">实时监控集群、节点、组件资源，预设告警策略</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">资源监控</div>
+                    </div>
+                    <div class="chart-container" style="display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 4px;">
+                        <div style="text-align: center; color: #8c8c8c;">
+                            <div style="font-size: 48px; margin-bottom: 8px;">📊</div>
+                            <div>实时监控图表</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">告警规则</div>
+                        <button class="btn btn-primary">+ 新建告警规则</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>规则名称</th>
+                                    <th>监控对象</th>
+                                    <th>告警条件</th>
+                                    <th>通知方式</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>CPU使用率告警</td>
+                                    <td>集群节点</td>
+                                    <td>CPU > 85%</td>
+                                    <td>邮箱、Webhook</td>
+                                    <td><span class="status-badge status-success">启用</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">禁用</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>内存使用率告警</td>
+                                    <td>集群节点</td>
+                                    <td>内存 > 90%</td>
+                                    <td>邮箱</td>
+                                    <td><span class="status-badge status-success">启用</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">禁用</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>磁盘使用率告警</td>
+                                    <td>集群节点</td>
+                                    <td>磁盘 > 90%</td>
+                                    <td>邮箱、Webhook</td>
+                                    <td><span class="status-badge status-success">启用</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">禁用</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>任务执行失败告警</td>
+                                    <td>任务调度</td>
+                                    <td>失败次数 > 3</td>
+                                    <td>邮箱、短信</td>
+                                    <td><span class="status-badge status-success">启用</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">禁用</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>数据源连接异常告警</td>
+                                    <td>数据源</td>
+                                    <td>连接失败</td>
+                                    <td>邮箱</td>
+                                    <td><span class="status-badge status-success">启用</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">禁用</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>API响应时间告警</td>
+                                    <td>数据服务</td>
+                                    <td>响应时间 > 500ms</td>
+                                    <td>邮箱、Webhook</td>
+                                    <td><span class="status-badge status-success">启用</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">禁用</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>实时任务延迟告警</td>
+                                    <td>实时开发</td>
+                                    <td>延迟 > 200ms</td>
+                                    <td>邮箱</td>
+                                    <td><span class="status-badge status-success">启用</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">禁用</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 资源管理 -->
+            <div id="resource" class="page">
+                <div class="page-header">
+                    <div class="page-title">资源管理</div>
+                    <div class="page-desc">资源配额与用量统计分析，实时监控各租户和项目的资源使用情况</div>
+                </div>
+
+                <div class="card">
+                    <div class="tabs">
+                        <div class="tab active">租户资源</div>
+                        <div class="tab">项目资源</div>
+                        <div class="tab">配额配置</div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>租户名称</th>
+                                    <th>CPU配额</th>
+                                    <th>内存配额</th>
+                                    <th>存储配额</th>
+                                    <th>使用率</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>业务部门A</td>
+                                    <td>100核 / 200核</td>
+                                    <td>200GB / 400GB</td>
+                                    <td>500GB / 1TB</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 50%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">调整配额</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>业务部门B</td>
+                                    <td>80核 / 150核</td>
+                                    <td>150GB / 300GB</td>
+                                    <td>300GB / 800GB</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 53%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">调整配额</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>技术部门</td>
+                                    <td>150核 / 300核</td>
+                                    <td>300GB / 600GB</td>
+                                    <td>800GB / 2TB</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 50%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">调整配额</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>数据分析部门</td>
+                                    <td>120核 / 250核</td>
+                                    <td>250GB / 500GB</td>
+                                    <td>600GB / 1.5TB</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 48%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">调整配额</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>运营部门</td>
+                                    <td>60核 / 100核</td>
+                                    <td>100GB / 200GB</td>
+                                    <td>200GB / 500GB</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 60%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">调整配额</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 元数据管理 -->
+            <div id="metadata" class="page">
+                <div class="page-header">
+                    <div class="page-title">元数据管理</div>
+                    <div class="page-desc">统一管理和维护企业内各类数据的描述信息</div>
+                </div>
+
+                <div class="toolbar">
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="搜索表名、字段名...">
+                        <button class="btn btn-primary">搜索</button>
+                    </div>
+                    <button class="btn btn-primary">自动采集</button>
+                    <button class="btn btn-default">手动补录</button>
+                </div>
+
+                <div class="card">
+                    <div class="tabs">
+                        <div class="tab active">数据地图</div>
+                        <div class="tab">血缘关系</div>
+                        <div class="tab">影响分析</div>
+                    </div>
+
+                    <div style="height: 500px; background: #fafafa; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #8c8c8c;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 8px;">🗺️</div>
+                            <div>数据地图可视化</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据质量 -->
+            <div id="quality" class="page">
+                <div class="page-header">
+                    <div class="page-title">数据质量管理</div>
+                    <div class="page-desc">及时发现并解决数据中的各类问题，确保数据高质量流转</div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-value">98.5%</div>
+                        <div class="stat-label">数据质量得分</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-value">23</div>
+                        <div class="stat-label">待处理问题</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-value">156</div>
+                        <div class="stat-label">质量规则</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">质量报告</div>
+                        <button class="btn btn-default">导出报告</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>数据表</th>
+                                    <th>完整性</th>
+                                    <th>准确性</th>
+                                    <th>一致性</th>
+                                    <th>时效性</th>
+                                    <th>综合得分</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>user_info</td>
+                                    <td><span class="status-badge status-success">99%</span></td>
+                                    <td><span class="status-badge status-success">98%</span></td>
+                                    <td><span class="status-badge status-warning">95%</span></td>
+                                    <td><span class="status-badge status-success">99%</span></td>
+                                    <td>97.75%</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看详情</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>order_info</td>
+                                    <td><span class="status-badge status-success">98%</span></td>
+                                    <td><span class="status-badge status-warning">92%</span></td>
+                                    <td><span class="status-badge status-success">97%</span></td>
+                                    <td><span class="status-badge status-success">98%</span></td>
+                                    <td>96.25%</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看详情</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>product_info</td>
+                                    <td><span class="status-badge status-success">100%</span></td>
+                                    <td><span class="status-badge status-success">99%</span></td>
+                                    <td><span class="status-badge status-success">98%</span></td>
+                                    <td><span class="status-badge status-success">100%</span></td>
+                                    <td>99.25%</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看详情</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>payment_info</td>
+                                    <td><span class="status-badge status-success">97%</span></td>
+                                    <td><span class="status-badge status-success">96%</span></td>
+                                    <td><span class="status-badge status-success">98%</span></td>
+                                    <td><span class="status-badge status-warning">94%</span></td>
+                                    <td>96.25%</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看详情</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>inventory_info</td>
+                                    <td><span class="status-badge status-success">98%</span></td>
+                                    <td><span class="status-badge status-success">97%</span></td>
+                                    <td><span class="status-badge status-success">99%</span></td>
+                                    <td><span class="status-badge status-success">98%</span></td>
+                                    <td>98.00%</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看详情</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>user_behavior</td>
+                                    <td><span class="status-badge status-warning">95%</span></td>
+                                    <td><span class="status-badge status-success">96%</span></td>
+                                    <td><span class="status-badge status-warning">93%</span></td>
+                                    <td><span class="status-badge status-success">97%</span></td>
+                                    <td>95.25%</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看详情</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>log_data</td>
+                                    <td><span class="status-badge status-success">99%</span></td>
+                                    <td><span class="status-badge status-success">98%</span></td>
+                                    <td><span class="status-badge status-success">99%</span></td>
+                                    <td><span class="status-badge status-success">100%</span></td>
+                                    <td>99.00%</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">查看详情</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据安全 -->
+            <div id="security" class="page">
+                <div class="page-header">
+                    <div class="page-title">数据安全管理</div>
+                    <div class="page-desc">数据分类分级、加密、脱敏、权限管控</div>
+                </div>
+
+                <div class="card">
+                    <div class="tabs">
+                        <div class="tab active">权限管理</div>
+                        <div class="tab">数据脱敏</div>
+                        <div class="tab">分类分级</div>
+                        <div class="tab">访问审计</div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>用户/角色</th>
+                                    <th>数据表</th>
+                                    <th>权限类型</th>
+                                    <th>权限范围</th>
+                                    <th>有效期</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>数据分析师</td>
+                                    <td>user_info</td>
+                                    <td>只读</td>
+                                    <td>全部字段</td>
+                                    <td>2024-12-31</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">收回</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>业务人员</td>
+                                    <td>order_info</td>
+                                    <td>读写</td>
+                                    <td>部分字段（脱敏）</td>
+                                    <td>2024-12-31</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">收回</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>运营人员</td>
+                                    <td>product_info</td>
+                                    <td>读写</td>
+                                    <td>全部字段</td>
+                                    <td>2024-12-31</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">收回</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>财务人员</td>
+                                    <td>payment_info</td>
+                                    <td>只读</td>
+                                    <td>部分字段（脱敏）</td>
+                                    <td>2024-12-31</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">收回</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>仓库管理员</td>
+                                    <td>inventory_info</td>
+                                    <td>读写</td>
+                                    <td>全部字段</td>
+                                    <td>2024-12-31</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">收回</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>数据开发</td>
+                                    <td>log_data</td>
+                                    <td>读写</td>
+                                    <td>全部字段</td>
+                                    <td>2024-12-31</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">收回</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据资产 -->
+            <div id="asset" class="page">
+                <div class="page-header">
+                    <div class="page-title">数据资产管理</div>
+                    <div class="page-desc">统一归集、规范管理和高效利用数据资源</div>
+                </div>
+
+                <div class="toolbar">
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="搜索数据库、表、指标、标签、API...">
+                        <button class="btn btn-primary">搜索</button>
+                    </div>
+                    <button class="btn btn-primary">+ 新建目录</button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 250px 1fr; gap: 24px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">资产目录</div>
+                        </div>
+                        <div style="line-height: 2;">
+                            <div style="padding: 8px; cursor: pointer; border-radius: 4px;">📁 全部资产</div>
+                            <div style="padding: 8px; cursor: pointer; border-radius: 4px;">📁 业务数据</div>
+                            <div style="padding: 8px; cursor: pointer; border-radius: 4px; padding-left: 24px;">📄 用户数据</div>
+                            <div style="padding: 8px; cursor: pointer; border-radius: 4px; padding-left: 24px;">📄 订单数据</div>
+                            <div style="padding: 8px; cursor: pointer; border-radius: 4px;">📁 分析数据</div>
+                            <div style="padding: 8px; cursor: pointer; border-radius: 4px;">📁 数据服务</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">资产列表</div>
+                            <div>
+                                <button class="btn btn-default">列表视图</button>
+                                <button class="btn btn-default">卡片视图</button>
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>资产名称</th>
+                                        <th>类型</th>
+                                        <th>所属目录</th>
+                                        <th>数据量</th>
+                                        <th>最后更新时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>user_info</td>
+                                        <td>数据表</td>
+                                        <td>业务数据/用户数据</td>
+                                        <td>1,234,567 行</td>
+                                        <td>2024-01-27 10:30:00</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn action-btn-view">预览</button>
+                                                <button class="action-btn action-btn-edit">申请</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>order_info</td>
+                                        <td>数据表</td>
+                                        <td>业务数据/订单数据</td>
+                                        <td>5,678,901 行</td>
+                                        <td>2024-01-27 10:25:00</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn action-btn-view">预览</button>
+                                                <button class="action-btn action-btn-edit">申请</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>product_info</td>
+                                        <td>数据表</td>
+                                        <td>业务数据/商品数据</td>
+                                        <td>856,234 行</td>
+                                        <td>2024-01-27 10:20:00</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn action-btn-view">预览</button>
+                                                <button class="action-btn action-btn-edit">申请</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>payment_info</td>
+                                        <td>数据表</td>
+                                        <td>业务数据/支付数据</td>
+                                        <td>3,456,789 行</td>
+                                        <td>2024-01-27 10:15:00</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn action-btn-view">预览</button>
+                                                <button class="action-btn action-btn-edit">申请</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>用户总数指标</td>
+                                        <td>数据指标</td>
+                                        <td>分析数据/用户指标</td>
+                                        <td>-</td>
+                                        <td>2024-01-27 10:10:00</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn action-btn-view">预览</button>
+                                                <button class="action-btn action-btn-edit">申请</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>订单金额指标</td>
+                                        <td>数据指标</td>
+                                        <td>分析数据/订单指标</td>
+                                        <td>-</td>
+                                        <td>2024-01-27 10:05:00</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn action-btn-view">预览</button>
+                                                <button class="action-btn action-btn-edit">申请</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>获取用户信息API</td>
+                                        <td>API接口</td>
+                                        <td>数据服务/用户服务</td>
+                                        <td>-</td>
+                                        <td>2024-01-27 09:50:00</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn action-btn-view">预览</button>
+                                                <button class="action-btn action-btn-edit">申请</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>查询订单列表API</td>
+                                        <td>API接口</td>
+                                        <td>数据服务/订单服务</td>
+                                        <td>-</td>
+                                        <td>2024-01-27 09:45:00</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn action-btn-view">预览</button>
+                                                <button class="action-btn action-btn-edit">申请</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API管理 -->
+            <div id="api" class="page">
+                <div class="page-header">
+                    <div class="page-title">API管理</div>
+                    <div class="page-desc">数据服务的标准化接口发布、权限管控、服务编排与监控分析</div>
+                </div>
+
+                <div class="toolbar">
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="搜索API名称...">
+                        <button class="btn btn-primary">搜索</button>
+                    </div>
+                    <button class="btn btn-primary" onclick="showModal('addApiModal')">+ 新建API</button>
+                </div>
+
+                <div class="card">
+                    <div class="tabs">
+                        <div class="tab active">API列表</div>
+                        <div class="tab">服务编排</div>
+                        <div class="tab">调用统计</div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>API名称</th>
+                                    <th>请求方式</th>
+                                    <th>路径</th>
+                                    <th>状态</th>
+                                    <th>调用次数</th>
+                                    <th>平均响应时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>获取用户信息</td>
+                                    <td>GET</td>
+                                    <td>/api/v1/user/{id}</td>
+                                    <td><span class="status-badge status-success">已发布</span></td>
+                                    <td>12,345</td>
+                                    <td>45ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">下线</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>查询订单列表</td>
+                                    <td>POST</td>
+                                    <td>/api/v1/order/list</td>
+                                    <td><span class="status-badge status-success">已发布</span></td>
+                                    <td>8,901</td>
+                                    <td>120ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">下线</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>获取商品详情</td>
+                                    <td>GET</td>
+                                    <td>/api/v1/product/{id}</td>
+                                    <td><span class="status-badge status-success">已发布</span></td>
+                                    <td>15,678</td>
+                                    <td>38ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">下线</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>查询支付记录</td>
+                                    <td>POST</td>
+                                    <td>/api/v1/payment/query</td>
+                                    <td><span class="status-badge status-success">已发布</span></td>
+                                    <td>5,432</td>
+                                    <td>95ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">下线</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>获取库存信息</td>
+                                    <td>GET</td>
+                                    <td>/api/v1/inventory/{id}</td>
+                                    <td><span class="status-badge status-success">已发布</span></td>
+                                    <td>9,876</td>
+                                    <td>52ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">下线</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>用户统计数据</td>
+                                    <td>GET</td>
+                                    <td>/api/v1/statistics/user</td>
+                                    <td><span class="status-badge status-success">已发布</span></td>
+                                    <td>3,210</td>
+                                    <td>180ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">下线</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>订单统计数据</td>
+                                    <td>GET</td>
+                                    <td>/api/v1/statistics/order</td>
+                                    <td><span class="status-badge status-info">待发布</span></td>
+                                    <td>0</td>
+                                    <td>-</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>批量查询用户</td>
+                                    <td>POST</td>
+                                    <td>/api/v1/user/batch</td>
+                                    <td><span class="status-badge status-success">已发布</span></td>
+                                    <td>2,345</td>
+                                    <td>250ms</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-btn-view">测试</button>
+                                            <button class="action-btn action-btn-edit">编辑</button>
+                                            <button class="action-btn action-btn-delete">下线</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框 - 新建数据源 -->
+    <div id="addDatasourceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">新建数据源</div>
+                <span class="modal-close" onclick="closeModal('addDatasourceModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">数据源名称</label>
+                    <input type="text" class="form-input" placeholder="请输入数据源名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">数据源类型</label>
+                    <select class="form-select">
+                        <option>请选择</option>
+                        <option>MySQL</option>
+                        <option>Oracle</option>
+                        <option>PostgreSQL</option>
+                        <option>SQL Server</option>
+                        <option>HDFS</option>
+                        <option>Kafka</option>
+                        <option>FTP/SFTP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">连接地址</label>
+                    <input type="text" class="form-input" placeholder="例如: 192.168.1.100:3306">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-input" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-input" placeholder="请输入密码">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('addDatasourceModal')">取消</button>
+                <button class="btn btn-primary">测试连接</button>
+                <button class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框 - 新建采集任务 -->
+    <div id="addCollectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">新建采集任务</div>
+                <span class="modal-close" onclick="closeModal('addCollectionModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">任务名称</label>
+                    <input type="text" class="form-input" placeholder="请输入任务名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">数据源</label>
+                    <select class="form-select">
+                        <option>请选择数据源</option>
+                        <option>MySQL-生产库</option>
+                        <option>Oracle-业务库</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">目标库</label>
+                    <select class="form-select">
+                        <option>请选择目标库</option>
+                        <option>Hive-ODS</option>
+                        <option>Hive-DWD</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">采集模式</label>
+                    <select class="form-select">
+                        <option>全量采集</option>
+                        <option>增量采集</option>
+                        <option>实时采集</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">调度周期</label>
+                    <select class="form-select">
+                        <option>实时</option>
+                        <option>每分钟</option>
+                        <option>每小时</option>
+                        <option>每天</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('addCollectionModal')">取消</button>
+                <button class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框 - 新建API -->
+    <div id="addApiModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">新建API</div>
+                <span class="modal-close" onclick="closeModal('addApiModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">API名称</label>
+                    <input type="text" class="form-input" placeholder="请输入API名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">请求方式</label>
+                    <select class="form-select">
+                        <option>GET</option>
+                        <option>POST</option>
+                        <option>PUT</option>
+                        <option>DELETE</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API路径</label>
+                    <input type="text" class="form-input" placeholder="/api/v1/...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">数据源</label>
+                    <select class="form-select">
+                        <option>请选择数据源</option>
+                        <option>数据表</option>
+                        <option>数据指标</option>
+                        <option>数据资产</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('addApiModal')">取消</button>
+                <button class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面切换
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.classList.add('active');
+                event.target.closest('.menu-item').classList.add('active');
+            }
+        }
+
+        // 显示模态框
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        // 关闭模态框
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // 点击模态框外部关闭
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+
+        // DAG节点拖拽（简单实现）
+        let isDragging = false;
+        let currentElement = null;
+        let offset = { x: 0, y: 0 };
+
+        document.querySelectorAll('.dag-node').forEach(node => {
+            node.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                currentElement = this;
+                const rect = this.getBoundingClientRect();
+                offset.x = e.clientX - rect.left;
+                offset.y = e.clientY - rect.top;
+            });
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging && currentElement) {
+                const canvas = document.getElementById('dagCanvas');
+                const canvasRect = canvas.getBoundingClientRect();
+                const x = e.clientX - canvasRect.left - offset.x;
+                const y = e.clientY - canvasRect.top - offset.y;
+                currentElement.style.left = x + 'px';
+                currentElement.style.top = y + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', function() {
+            isDragging = false;
+            currentElement = null;
+        });
+    </script>
+</body>
+</html>
