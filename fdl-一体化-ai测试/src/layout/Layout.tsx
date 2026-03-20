@@ -196,6 +196,8 @@ export default function Layout() {
   const [unsavedTableIds, setUnsavedTableIds] = useState<Record<string, boolean>>({})
   const [devAiPayload, setDevAiPayload] = useState<DevelopmentAiPayload | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isOmniPanelOpen, setIsOmniPanelOpen] = useState(true)
+  const [omniFocusSignal, setOmniFocusSignal] = useState(0)
 
   const activeTable = useMemo(
     () => tables.find((table) => table.id === activeTableId) ?? tables[0],
@@ -559,10 +561,15 @@ export default function Layout() {
                   activeApp={activeApp}
                   onChange={setActiveApp}
                   onAiClick={() => {
-                    const inputEl = document.getElementById(
-                      'omni-panel-chat-input',
-                    ) as HTMLInputElement | null
-                    if (inputEl) inputEl.focus()
+                    setIsOmniPanelOpen(true)
+                    // 等待 Omni Panel 进入 DOM（未来若可折叠/异步渲染会更健壮）
+                    window.setTimeout(() => {
+                      setOmniFocusSignal((s) => s + 1)
+                      const inputEl = document.getElementById(
+                        'omni-panel-chat-input',
+                      ) as HTMLInputElement | null
+                      inputEl?.focus()
+                    }, 80)
                   }}
                   onSettingsClick={() => setIsSettingsOpen(true)}
                 />
@@ -605,7 +612,19 @@ export default function Layout() {
         </section>
 
         <aside className="w-1/4 min-w-[360px] p-5">
-          <OmniPanel tables={tables} activeTableId={activeTableId} onApplyReceipt={handleApplyReceipt} />
+          <div
+            className={cn(
+              'h-full transition-opacity duration-200',
+              isOmniPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none',
+            )}
+          >
+            <OmniPanel
+              tables={tables}
+              activeTableId={activeTableId}
+              onApplyReceipt={handleApplyReceipt}
+              focusSignal={omniFocusSignal}
+            />
+          </div>
         </aside>
       </div>
 

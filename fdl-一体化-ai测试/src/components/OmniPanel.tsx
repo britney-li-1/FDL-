@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Bot, CircleDashed, Sparkles } from 'lucide-react'
 import { cn } from '../lib/utils'
 import type { DataSourceResource, E2EPayload, Mapping, Receipt, TableResource } from '../types/domain'
@@ -23,6 +23,11 @@ type OmniPanelProps = {
   tables: TableResource[]
   activeTableId: string
   onApplyReceipt: (receipt: Receipt) => void
+  /**
+   * 当外部需要强制触发聚焦 UX 时递增。用于不展开/异步展开的健壮性。
+   * 例如 Activity Bar 点击 AI 助手后，Layout 里 setTimeout -> setOmniFocusSignal(+1)
+   */
+  focusSignal?: number
 }
 
 const SUGGESTIONS = [
@@ -45,15 +50,35 @@ const SUGGESTIONS = [
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export function OmniPanel({ tables, activeTableId, onApplyReceipt }: OmniPanelProps) {
+export function OmniPanel({
+  tables,
+  activeTableId,
+  onApplyReceipt,
+  focusSignal,
+}: OmniPanelProps) {
   const [commandInput, setCommandInput] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
+  const [isHighlighting, setIsHighlighting] = useState(false)
+  const highlightTimerRef = useRef<number | null>(null)
+
+  const triggerHighlight = useCallback(() => {
+    setIsHighlighting(true)
+    if (highlightTimerRef.current != null) window.clearTimeout(highlightTimerRef.current)
+    highlightTimerRef.current = window.setTimeout(() => {
+      setIsHighlighting(false)
+    }, 1800)
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages])
+
+  useEffect(() => {
+    if (focusSignal == null) return
+    triggerHighlight()
+  }, [focusSignal, triggerHighlight])
 
   const updateMessageSteps = (
     messageId: string,
@@ -550,16 +575,25 @@ GROUP BY customer_id;`,
       </div>
 
       <footer className="border-t border-white/10 p-3">
-        <input
-          id="omni-panel-chat-input"
-          value={commandInput}
-          onChange={(e) => setCommandInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') void handleSubmitCommand()
-          }}
-          placeholder="输入指令并按回车..."
-          className="h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-xs outline-none placeholder:text-slate-400"
-        />
+        <div
+          className={cn(
+            'rounded-xl transition-all duration-300',
+            isHighlighting &&
+              'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0d1218] shadow-[0_0_0_1px_rgba(59,130,246,0.45),0_0_26px_rgba(59,130,246,0.35)] animate-pulse',
+          )}
+        >
+          <input
+            id="omni-panel-chat-input"
+            value={commandInput}
+            onChange={(e) => setCommandInput(e.target.value)}
+            onFocus={() => triggerHighlight()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void handleSubmitCommand()
+            }}
+            placeholder="输入指令并按回车..."
+            className="h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-xs outline-none placeholder:text-slate-400"
+          />
+        </div>
       </footer>
     </div>
   )
