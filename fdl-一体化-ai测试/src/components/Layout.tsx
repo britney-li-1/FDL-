@@ -8,13 +8,14 @@ import {
   SquareTerminal,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
-import DevelopmentModule, {
-  type DevelopmentAiPayload,
-} from './DevelopmentModule'
+import { type DevelopmentAiPayload } from './DevelopmentModule'
+import DbtReadEditDevelopmentWorkspace, {
+  type DbtRealState,
+  type MaterializationMode,
+} from './DbtReadEditDevelopmentWorkspace'
 
 type TableType = 'integration' | 'development'
 type GlobalAppModule = 'connections' | 'develop' | 'integrate'
-type TabType = 'preview' | 'schema' | 'config'
 
 type Mapping = {
   sourceField: string
@@ -32,6 +33,8 @@ type TableResource = {
   mappings: Mapping[]
   sql: string
   status: 'draft' | 'ready' | 'deployed'
+  materializationStrategy?: MaterializationMode
+  scheduleCron?: string
 }
 
 type Receipt = {
@@ -140,26 +143,134 @@ const defaultTable: TableResource = {
 }
 
 const defaultDevTable: TableResource = {
-  id: 'dws_user_profile',
-  name: 'dws_user_profile',
+  id: 'dim_user_profile',
+  name: 'dim_user_profile',
   type: 'development',
-  source: 'warehouse.dwd_user_events',
-  target: 'warehouse.dws_user_profile',
+  source: 'ecommerce_dw.stg_user_profile_events',
+  target: 'ecommerce_dw.dim_user_profile',
   mappings: [],
-  sql: `SELECT
+  materializationStrategy: 'view',
+  scheduleCron: '0 3 * * *',
+  sql: `WITH latest AS (
+  SELECT
+    user_id,
+    region,
+    latest_login_time,
+    status,
+    ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY latest_login_time DESC) AS rn
+  FROM ecommerce_dw.stg_user_profile_events
+  WHERE status IN ('active', 'inactive')
+),
+deduped AS (
+  SELECT
+    user_id,
+    region,
+    latest_login_time,
+    status
+  FROM latest
+  WHERE rn = 1
+)
+SELECT
   user_id,
-  max(last_login_time) AS last_login_time,
-  count(1) AS active_days
-FROM dwd_user_events
-GROUP BY user_id;`,
+  region,
+  latest_login_time,
+  status
+FROM deduped;`,
   status: 'ready',
 }
 
-const previewRows = Array.from({ length: 10 }).map((_, index) => ({
-  order_id: `${10001 + index}`,
-  user_phone: `13${index}****${8800 + index}`,
-  amount: `${(index + 1) * 37}.00`,
-}))
+const defaultDwdOrderDetail: TableResource = {
+  id: 'dwd_order_detail',
+  name: 'dwd_order_detail',
+  type: 'development',
+  source: 'ecommerce_dw.stg_orders_raw',
+  target: 'ecommerce_dw.dwd_order_detail',
+  mappings: [],
+  materializationStrategy: 'incremental',
+  scheduleCron: '0 1 * * *',
+  sql: `WITH cleaned AS (
+  SELECT
+    CAST(order_id AS BIGINT) AS order_id,
+    CAST(user_id AS BIGINT) AS user_id,
+    CAST(amount AS DECIMAL(18,2)) AS amount,
+    order_status,
+    CAST(dt AS DATE) AS dt
+  FROM ecommerce_dw.stg_orders_raw
+  WHERE order_id IS NOT NULL
+    AND user_id IS NOT NULL
+    AND amount IS NOT NULL
+),
+valid AS (
+  SELECT
+    order_id,
+    user_id,
+    amount,
+    order_status,
+    dt
+  FROM cleaned
+  WHERE order_status IN ('paid', 'completed')
+    AND amount > 0
+)
+SELECT
+  order_id,
+  user_id,
+  amount,
+  order_status,
+  dt
+FROM valid;`,
+  status: 'ready',
+}
+
+const defaultDwsRegionalUserActivitySummary: TableResource = {
+  id: 'dws_regional_user_activity_summary',
+  name: 'dws_regional_user_activity_summary',
+  type: 'development',
+  source: 'ecommerce_dw.dim_user_profile + ecommerce_dw.dwd_order_detail',
+  target: 'ecommerce_dw.dws_regional_user_activity_summary',
+  mappings: [],
+  materializationStrategy: 'incremental',
+  scheduleCron: '0 2 * * *',
+  sql: `WITH active_users AS (
+  SELECT
+    user_id,
+    region,
+    latest_login_time
+  FROM ecommerce_dw.dim_user_profile
+  WHERE latest_login_time >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+    AND status = 'active'
+),
+valid_orders AS (
+  SELECT
+    order_id,
+    user_id,
+    amount
+  FROM ecommerce_dw.dwd_order_detail
+  WHERE order_status IN ('paid', 'completed')
+    AND amount > 0
+),
+agg AS (
+  SELECT
+    au.region,
+    COUNT(DISTINCT au.user_id) AS usr_cnt,
+    SUM(vo.amount) AS total_order_amount,
+    CASE
+      WHEN SUM(vo.amount) > 10000 THEN 1 ELSE 0
+    END AS high_value_user_flag
+  FROM active_users au
+  LEFT JOIN valid_orders vo
+    ON au.user_id = vo.user_id
+  GROUP BY au.region
+)
+SELECT
+  region,
+  usr_cnt,
+  total_order_amount,
+  high_value_user_flag
+FROM agg
+WHERE region IS NOT NULL
+ORDER BY total_order_amount DESC;`,
+  status: 'ready',
+}
 
 const SIDEBAR_PANEL_CLASS = 'rounded-2xl border border-white/10 bg-white/[0.03]'
 const SIDEBAR_ITEM_BASE_CLASS =
@@ -201,6 +312,8 @@ function Layout() {
   const [tables, setTables] = useState<TableResource[]>([
     defaultTable,
     defaultDevTable,
+    defaultDwdOrderDetail,
+    defaultDwsRegionalUserActivitySummary,
   ])
   const [dataSources, setDataSources] = useState<DataSourceResource[]>([
     {
@@ -217,25 +330,88 @@ function Layout() {
   const [activeApp, setActiveApp] = useState<GlobalAppModule>('connections')
   const [activeConnectionId, setActiveConnectionId] = useState('mysql_seed')
   const [activePipelineId, setActivePipelineId] = useState('pipe_mysql_hive_full')
-  const [activeTableId, setActiveTableId] = useState(defaultTable.id)
-  const [activeTab, setActiveTab] = useState<TabType>('preview')
-  const [unsavedTableIds, setUnsavedTableIds] = useState<Record<string, boolean>>({})
+  const [activeTableId, setActiveTableId] = useState(defaultDevTable.id)
+  const [, setUnsavedTableIds] = useState<Record<string, boolean>>({})
+  // 数据开发：上下文锁定（Data Source / Connection）
+  const [devDataSourceId, setDevDataSourceId] = useState(dataSources[0]?.id ?? 'mysql_seed')
+  const [expandedDatabases, setExpandedDatabases] = useState<Record<string, boolean>>({
+    ecommerce_dw: true,
+  })
   const [commandInput, setCommandInput] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
-  const [workspaceSplitMode, setWorkspaceSplitMode] = useState<
-    'none' | 'e2e-review'
-  >('none')
-  const [e2eHighlight, setE2eHighlight] = useState<Record<string, boolean>>({})
+  // 仅用于 e2e 推演回填的“闪烁/差异提示”状态
+  // （当前已在开发主工作区移除使用，因此只保留 setter，避免未使用变量报错）
+  const [, setWorkspaceSplitMode] = useState<'none' | 'e2e-review'>('none')
+  const [, setE2eHighlight] = useState<Record<string, boolean>>({})
   const [devAiPayload, setDevAiPayload] = useState<DevelopmentAiPayload | null>(
     null,
   )
+
+  const [isEditing, setIsEditing] = useState(false)
+  const emptyDevState: DbtRealState = {
+    sql: '',
+    tableName: '',
+    database: 'warehouse',
+    materialization: 'incremental',
+    schedule: 'Daily',
+  }
+  const [devState, setDevState] = useState<DbtRealState>(emptyDevState)
+  const [devCommittedState, setDevCommittedState] = useState<DbtRealState>(emptyDevState)
+  const prevActiveTableIdRef = useRef(activeTableId)
 
   const activeTable = useMemo(
     () => tables.find((table) => table.id === activeTableId) ?? tables[0],
     [activeTableId, tables],
   )
+
+  useEffect(() => {
+    // 模拟“没有注册表”的业务：进入 develop 时确保当前表处于 development
+    if (activeApp === 'develop' && activeTable.type !== 'development') {
+      setActiveTableId(defaultDevTable.id)
+      setIsEditing(false)
+      setDevAiPayload(null)
+    }
+  }, [activeApp, activeTable.type])
+
+  useEffect(() => {
+    if (isEditing) return
+    const tableChanged = prevActiveTableIdRef.current !== activeTableId
+    prevActiveTableIdRef.current = activeTableId
+
+    // Create Flow：若当前呈现的是“空画布栏”，则取消编辑时不应被 activeTable.name 覆盖。
+    if (!tableChanged) {
+      const isEmptyCommitted = !devCommittedState.tableName.trim() && !devCommittedState.sql.trim()
+      if (isEmptyCommitted) return
+    }
+
+    const parts = activeTable.target.split('.').filter(Boolean)
+    const database = parts[0] ?? activeTable.target
+    const sqlFromMappings =
+      activeTable.type !== 'development' && activeTable.mappings.length > 0
+        ? `SELECT ${activeTable.mappings
+            .map((m) => `${m.sourceField} AS ${m.targetField}`)
+            .join(', ')} FROM ${activeTable.source};`
+        : activeTable.sql
+    const next: DbtRealState = {
+      sql: activeTable.type === 'development' ? activeTable.sql : sqlFromMappings,
+      tableName: activeTable.name,
+      database,
+      materialization: (activeTable.materializationStrategy ?? 'incremental') as MaterializationMode,
+      schedule: activeTable.scheduleCron ?? 'Daily',
+    }
+    setDevState(next)
+    setDevCommittedState(next)
+  }, [activeTableId, isEditing, devCommittedState])
+
+  useEffect(() => {
+    if (!isEditing) return
+    if (activeTable.type !== 'development') return
+    const changed = JSON.stringify(devState) !== JSON.stringify(devCommittedState)
+    if (!changed) return
+    setUnsavedTableIds((prev) => ({ ...prev, [activeTableId]: true }))
+  }, [isEditing, devState, devCommittedState, activeTableId, activeTable.type])
 
   const connectionResources = useMemo<ConnectionResource[]>(
     () => [
@@ -451,79 +627,189 @@ function Layout() {
       )
     }
 
+    const connectionOptions = connectionResources.filter(
+      (r) => r.id === devDataSourceId || r.source === 'mock',
+    )
+
+    const databases = Array.from(
+      new Set(
+        tables
+          .map((t) => t.target.split('.').filter(Boolean)[0] ?? t.target)
+          .filter((x): x is string => Boolean(x)),
+      ),
+    )
+
+    const tablesInDatabase = (db: string) =>
+      tables.filter(
+        (t) => t.type === 'development' && t.target.split('.').filter(Boolean)[0] === db,
+      )
+
     return (
       <div className="space-y-3">
-        <div className={cn(SIDEBAR_PANEL_CLASS, 'p-3')}>
-          <div className="flex items-start justify-between gap-2">
+        {/* Context Selectors */}
+        <div className={cn('rounded-lg border border-white/10 bg-black/10 p-2')}>
+          <div className="mb-3 flex items-start justify-between gap-2">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">
-                Develop Objects
-              </p>
-              <p className="mt-1 text-xs text-slate-300">表对象、预览与逻辑编辑入口</p>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Context</p>
             </div>
-            <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-[10px] text-cyan-100">
-              {tables.length}
-            </span>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block space-y-1 text-xs">
+              <div className="text-slate-400">选择数据源（Data Source）</div>
+              <select
+                value={devDataSourceId}
+                onChange={(e) => {
+                  const next = e.target.value
+                  setDevDataSourceId(next)
+                  setActiveConnectionId(next)
+                }}
+                className="h-8 w-full rounded-md border border-white/10 bg-slate-950/60 px-2 text-[11px] text-slate-100 outline-none focus:border-cyan-300/40"
+              >
+                {dataSources.map((ds) => (
+                  <option key={ds.id} value={ds.id}>
+                    {ds.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-1 text-xs">
+              <div className="text-slate-400">选择数据连接（Connection）</div>
+              <select
+                value={activeConnectionId}
+                onChange={(e) => setActiveConnectionId(e.target.value)}
+                className="h-8 w-full rounded-md border border-white/10 bg-slate-950/60 px-2 text-[11px] text-slate-100 outline-none focus:border-cyan-300/40"
+              >
+                {connectionOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} · {c.database}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 
-        <div className="space-y-2">
-          {tables.map((table) => (
-            <button
-              key={table.id}
-              onClick={() => {
-                handleSelectTable(table.id)
-                setActiveApp('develop')
-              }}
-              className={cn(
-                SIDEBAR_ITEM_BASE_CLASS,
-                SIDEBAR_ITEM_IDLE_CLASS,
-                activeTableId === table.id && SIDEBAR_ITEM_ACTIVE_CLASS,
-              )}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex min-w-0 items-start gap-2">
-                  {table.type === 'integration' ? (
-                    <Cable className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" />
-                  ) : (
-                    <SquareTerminal className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-200" />
-                  )}
-                  <div className="min-w-0">
-                    <div className="truncate text-xs font-medium">{table.name}</div>
-                    <p className="mt-1 truncate text-[11px] text-slate-500">{table.target}</p>
-                  </div>
+        {/* Database-driven Tree View */}
+        <div className={cn('rounded-lg border border-white/10 bg-black/10 p-2 space-y-2')}>
+          {databases.map((db) => {
+            const expanded = expandedDatabases[db] ?? true
+            const items = tablesInDatabase(db)
+            return (
+              <div key={db} className="space-y-1">
+                <div className="group flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedDatabases((prev) => ({ ...prev, [db]: !expanded }))
+                    }
+                    className="flex items-center gap-2 rounded-md border border-white/10 bg-black/20 px-2 py-1 text-left text-[11px] text-slate-200 hover:border-cyan-300/30"
+                    title="展开/收起"
+                  >
+                    <span className="text-slate-400">{expanded ? '▾' : '▸'}</span>
+                    <span className="truncate">{db}</span>
+                  </button>
+
+                  {/* hover: [+] 仅在该库下创建 Development Model */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newId = `dws_new_${crypto.randomUUID().slice(0, 8)}`
+                      const nextName = `dws_new_${newId.slice('dws_new_'.length)}`.replace(/[^a-zA-Z0-9_]/g, '_')
+                      const nextTarget = `${db}.${nextName}`
+                      const nextSource = `${db}.dwd_source_events`
+
+                      const nextTable: TableResource = {
+                        id: newId,
+                        name: nextName,
+                        type: 'development',
+                        source: nextSource,
+                        target: nextTarget,
+                        mappings: [],
+                        materializationStrategy: 'incremental',
+                        scheduleCron: 'Daily',
+                        sql: '',
+                        status: 'draft',
+                      }
+
+                      setTables((prev) => [...prev, nextTable])
+                      setActiveTableId(newId)
+                      setActiveApp('develop')
+                      setDevAiPayload(null)
+                      setIsEditing(true)
+                      setUnsavedTableIds((prev) => ({ ...prev, [newId]: true }))
+
+                      // Create Flow：清空表单与 SQL，进入开发编辑态
+                      setDevState({
+                        sql: '',
+                        tableName: '',
+                        database: db,
+                        materialization: 'incremental',
+                        schedule: 'Daily',
+                      })
+                      setDevCommittedState({
+                        sql: '',
+                        tableName: '',
+                        database: db,
+                        materialization: 'incremental',
+                        schedule: 'Daily',
+                      })
+                    }}
+                    className="ml-auto rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-cyan-200 transition hover:bg-cyan-400/10"
+                    title="+ 新建开发表"
+                  >
+                    [+]
+                  </button>
                 </div>
-                <span
-                  className={cn(
-                    'rounded-full border px-1.5 py-0.5 text-[10px]',
-                    unsavedTableIds[table.id]
-                      ? 'border-amber-300/20 bg-amber-400/10 text-amber-200'
-                      : 'border-white/10 bg-white/5 text-slate-400',
-                  )}
-                >
-                  {unsavedTableIds[table.id]
-                    ? 'Draft'
-                    : table.type === 'integration'
-                      ? 'Preview'
-                      : 'SQL'}
-                </span>
+
+                {expanded && (
+                  <div className="space-y-0.5">
+                    {items.map((table) => {
+                      const isActive = activeTableId === table.id
+                      return (
+                        <button
+                          key={table.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveTableId(table.id)
+                            setActiveApp('develop')
+                            setIsEditing(false)
+                            setDevAiPayload(null)
+                          }}
+                          className={cn(
+                            'w-full rounded-md border-l-2 text-left transition',
+                            isActive
+                              ? 'border-cyan-400/70 bg-cyan-400/15 text-cyan-100 border-white/10'
+                              : 'border-transparent bg-black/10 text-slate-300 hover:border-cyan-300/40 hover:bg-black/20',
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2 px-2 py-1">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <SquareTerminal className="h-3.5 w-3.5 shrink-0 text-cyan-200" />
+                              <div className="min-w-0">
+                                <div className="truncate text-[11px] font-medium leading-5">
+                                  {table.name}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="shrink-0">
+                              {/* 纯视觉占位：避免其他文字标签干扰 */}
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-500/50" />
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-              <div className="mt-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-slate-500">
-                <span>{table.type === 'integration' ? 'Table Object' : 'Logic Object'}</span>
-                <span>{table.status === 'draft' ? 'Pending' : 'Ready'}</span>
-              </div>
-            </button>
-          ))}
+            )
+          })}
         </div>
       </div>
     )
-  }
-
-  const updateActiveTable = (updater: (table: TableResource) => TableResource) => {
-    setTables((prev) =>
-      prev.map((table) => (table.id === activeTableId ? updater(table) : table)),
-    )
-    setUnsavedTableIds((prev) => ({ ...prev, [activeTableId]: true }))
   }
 
   const updateActiveConnection = (
@@ -534,12 +820,6 @@ function Layout() {
         connection.id === activeConnectionId ? updater(connection) : connection,
       ),
     )
-  }
-
-  const handleSelectTable = (id: string) => {
-    setActiveTableId(id)
-    setActiveTab('preview')
-    setActiveApp('develop')
   }
 
   useEffect(() => {
@@ -936,7 +1216,6 @@ GROUP BY customer_id;`,
       setActiveConnectionId(payload.dataSource.id)
       setActiveApp('connections')
       setActiveTableId(payload.table.id)
-      setActiveTab('config')
       setWorkspaceSplitMode('e2e-review')
       setUnsavedTableIds((prev) => ({ ...prev, [payload.table.id]: true }))
       setE2eHighlight({
@@ -959,7 +1238,6 @@ GROUP BY customer_id;`,
       return [...prev, payload]
     })
     setActiveTableId(payload.id)
-    setActiveTab('config')
     setWorkspaceSplitMode('none')
     setUnsavedTableIds((prev) => ({ ...prev, [payload.id]: true }))
 
@@ -992,23 +1270,6 @@ GROUP BY customer_id;`,
     setActiveApp('integrate')
     setDevAiPayload(null)
   }
-
-  const handleSave = () => {
-    // TODO:[AI_AGENT_BACKEND_HOOK] 在这里接入保存 API
-    setUnsavedTableIds((prev) => ({ ...prev, [activeTableId]: false }))
-  }
-
-  const schemaRows = activeTable.type === 'integration'
-    ? activeTable.mappings.map((mapping, idx) => ({
-        id: `${mapping.targetField}-${idx}`,
-        field: mapping.targetField || `field_${idx + 1}`,
-        type: mapping.type || 'STRING',
-      }))
-    : [
-        { id: 'user_id', field: 'user_id', type: 'BIGINT' },
-        { id: 'last_active_date', field: 'last_active_date', type: 'DATE' },
-        { id: 'retained_users_30d', field: 'retained_users_30d', type: 'INT' },
-      ]
 
   const isManagedConnection = activeConnection?.source === 'managed'
   const linkedPipelineTable = activePipeline?.tableId
@@ -1186,287 +1447,79 @@ GROUP BY customer_id;`,
     </div>
   )
 
-  const renderDevelopmentWorkspace = () => (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
-        <div className="text-xs text-slate-300">Develop / {activeTable.name}</div>
-        <div className="flex items-center gap-2">
-          {unsavedTableIds[activeTableId] && (
-            <span className="rounded-md border border-rose-300/40 bg-rose-400/20 px-2 py-1 text-[11px] text-rose-200">
-              Unsaved
-            </span>
-          )}
-          <button
-            onClick={handleSave}
-            className="rounded-lg border border-white/20 px-3 py-1.5 text-xs hover:bg-white/10"
-          >
-            保存
-          </button>
-          <button className="rounded-lg border border-emerald-300/50 bg-emerald-400/20 px-3 py-1.5 text-xs text-emerald-100">
-            部署
-          </button>
+  const renderDevelopmentWorkspace = () => {
+    const editable = true
+
+    const targetDatabaseOptions = Array.from(
+      new Set(
+        tables
+          .map((t) => t.target.split('.').filter(Boolean)[0])
+          .filter((x): x is string => Boolean(x)),
+      ),
+    )
+
+    if (devState.database && !targetDatabaseOptions.includes(devState.database)) {
+      targetDatabaseOptions.push(devState.database)
+    }
+
+    return (
+      <div className="flex h-full flex-col min-h-0">
+        <div className="min-h-0 flex-1 overflow-hidden p-5">
+          <DbtReadEditDevelopmentWorkspace
+            editable={editable}
+            isEditing={isEditing}
+            devState={devState}
+            setDevState={setDevState}
+            aiPayload={devAiPayload}
+            onAiPayloadConsumed={() => setDevAiPayload(null)}
+            targetDatabaseOptions={targetDatabaseOptions}
+            onEnterEdit={() => {
+              if (!editable) return
+              setDevState(devCommittedState)
+              setIsEditing(true)
+            }}
+            onCancel={() => {
+              const isEmptyCommitted =
+                !devCommittedState.tableName.trim() && !devCommittedState.sql.trim()
+              // 防止取消后触发 effect 把 activeTable.name 覆盖回非空
+              prevActiveTableIdRef.current = activeTableId
+              setDevState(devCommittedState)
+              setIsEditing(false)
+              setDevAiPayload(null)
+              if (!isEmptyCommitted) {
+                setUnsavedTableIds((prev) => ({ ...prev, [activeTableId]: false }))
+              }
+            }}
+            onPublish={async (next) => {
+              // 模拟编译 + 发布
+              await sleep(900)
+              prevActiveTableIdRef.current = activeTableId
+              setTables((prev) =>
+                prev.map((t) =>
+                  t.id === activeTableId
+                    ? {
+                        ...t,
+                        name: next.tableName,
+                        target: `${next.database}.${next.tableName}`,
+                        sql: next.sql,
+                        materializationStrategy: next.materialization,
+                        scheduleCron: next.schedule,
+                        status: 'ready',
+                      }
+                    : t,
+                ),
+              )
+              setUnsavedTableIds((prev) => ({ ...prev, [activeTableId]: false }))
+              setDevCommittedState(next)
+              setDevState(next)
+              setIsEditing(false)
+              setDevAiPayload(null)
+            }}
+          />
         </div>
       </div>
-
-      <div className="h-[calc(100vh-8.8rem)] overflow-y-auto p-5">
-        <div className="mb-4 flex gap-2">
-          {[
-            { id: 'preview', label: 'Data Preview' },
-            { id: 'schema', label: 'Schema' },
-            {
-              id: 'config',
-              label: activeTable.type === 'integration' ? 'Configuration' : '逻辑编辑',
-            },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as TabType)}
-              className={cn(
-                'rounded-lg border px-3 py-1.5 text-xs transition',
-                activeTab === tab.id
-                  ? 'border-cyan-300/60 bg-cyan-400/20 text-cyan-100'
-                  : 'border-white/20 bg-white/5 text-slate-300 hover:bg-white/10',
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === 'preview' && (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="overflow-hidden rounded-xl border border-white/10">
-              <table className="w-full border-collapse text-xs">
-                <thead className="bg-white/5 text-slate-300">
-                  <tr>
-                    <th className="border-b border-white/10 px-3 py-2 text-left">order_id</th>
-                    <th className="border-b border-white/10 px-3 py-2 text-left">user_phone</th>
-                    <th className="border-b border-white/10 px-3 py-2 text-left">amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {previewRows.map((row) => (
-                    <tr key={row.order_id}>
-                      <td className="border-b border-white/10 px-3 py-2">{row.order_id}</td>
-                      <td className="border-b border-white/10 px-3 py-2">{row.user_phone}</td>
-                      <td className="border-b border-white/10 px-3 py-2">{row.amount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'schema' && (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="space-y-2">
-              {schemaRows.map((row) => (
-                <div
-                  key={row.id}
-                  className="grid grid-cols-[1.2fr_1fr] rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs"
-                >
-                  <span>{row.field}</span>
-                  <span className="text-slate-400">{row.type}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'config' &&
-          (activeTable.type === 'integration' ? (
-            <div className="space-y-4">
-              {workspaceSplitMode === 'e2e-review' && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/[0.06] p-4">
-                    <div className="mb-3 text-xs font-semibold text-emerald-200">
-                      Data Source Draft
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="space-y-1 text-xs">
-                        <span className="text-slate-400">Host</span>
-                        <input
-                          value={dataSources.find((d) => d.id === 'MySQL_Sales_Online')?.host ?? ''}
-                          readOnly
-                          className={cn(
-                            'h-9 rounded-lg border bg-slate-900/90 px-2 text-xs outline-none',
-                            e2eHighlight.host
-                              ? 'border-emerald-300/60 shadow-[0_0_0_1px_rgba(16,185,129,0.25)]'
-                              : 'border-white/20',
-                          )}
-                        />
-                      </label>
-                      <label className="space-y-1 text-xs">
-                        <span className="text-slate-400">Database</span>
-                        <input
-                          value={
-                            dataSources.find((d) => d.id === 'MySQL_Sales_Online')?.database ?? ''
-                          }
-                          readOnly
-                          className={cn(
-                            'h-9 rounded-lg border bg-slate-900/90 px-2 text-xs outline-none',
-                            e2eHighlight.database
-                              ? 'border-emerald-300/60 shadow-[0_0_0_1px_rgba(16,185,129,0.25)]'
-                              : 'border-white/20',
-                          )}
-                        />
-                      </label>
-                      <label className="space-y-1 text-xs">
-                        <span className="text-slate-400">Username</span>
-                        <input
-                          value={
-                            dataSources.find((d) => d.id === 'MySQL_Sales_Online')?.username ?? ''
-                          }
-                          readOnly
-                          className={cn(
-                            'h-9 rounded-lg border bg-slate-900/90 px-2 text-xs outline-none',
-                            e2eHighlight.username
-                              ? 'border-emerald-300/60 shadow-[0_0_0_1px_rgba(16,185,129,0.25)]'
-                              : 'border-white/20',
-                          )}
-                        />
-                      </label>
-                      <label className="space-y-1 text-xs">
-                        <span className="text-slate-400">Status</span>
-                        <input
-                          value="待注册"
-                          readOnly
-                          className="h-9 rounded-lg border border-white/20 bg-slate-900/90 px-2 text-xs text-slate-300 outline-none"
-                        />
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <div className="mb-3 text-xs font-semibold text-cyan-200">
-                      Integration Task Draft
-                    </div>
-                    <div className="text-[11px] text-slate-400">
-                      全量覆盖 / 一次性执行 / 按天分区 / 自动映射字段
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <div className="mb-3 flex items-center gap-2 text-xs text-cyan-200">
-                  <Database className="h-4 w-4" />
-                  Pipeline Configuration
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    value={activeTable.source}
-                    onChange={(e) =>
-                      updateActiveTable((table) => ({ ...table, source: e.target.value }))
-                    }
-                    className={cn(
-                      'h-9 rounded-lg border bg-slate-900/90 px-2 text-xs outline-none',
-                      e2eHighlight.source
-                        ? 'border-emerald-300/60 shadow-[0_0_0_1px_rgba(16,185,129,0.25)]'
-                        : 'border-white/20',
-                    )}
-                  />
-                  <input
-                    value={activeTable.target}
-                    onChange={(e) =>
-                      updateActiveTable((table) => ({ ...table, target: e.target.value }))
-                    }
-                    className={cn(
-                      'h-9 rounded-lg border bg-slate-900/90 px-2 text-xs outline-none',
-                      e2eHighlight.target
-                        ? 'border-emerald-300/60 shadow-[0_0_0_1px_rgba(16,185,129,0.25)]'
-                        : 'border-white/20',
-                    )}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <p className="mb-3 text-xs text-slate-300">Schema Mappings</p>
-                <div className="space-y-2">
-                  {activeTable.mappings.map((mapping, index) => (
-                    <div
-                      key={`${mapping.sourceField}-${index}`}
-                      className="grid grid-cols-[1.1fr_1.1fr_0.9fr_0.6fr] gap-2"
-                    >
-                      <input
-                        value={mapping.sourceField}
-                        onChange={(e) =>
-                          updateActiveTable((table) => ({
-                            ...table,
-                            mappings: table.mappings.map((item, idx) =>
-                              idx === index ? { ...item, sourceField: e.target.value } : item,
-                            ),
-                          }))
-                        }
-                        className={cn(
-                          'h-8 rounded-lg border bg-slate-900/90 px-2 text-xs outline-none',
-                          e2eHighlight.mappings ? 'border-emerald-300/40' : 'border-white/20',
-                        )}
-                      />
-                      <input
-                        value={mapping.targetField}
-                        onChange={(e) =>
-                          updateActiveTable((table) => ({
-                            ...table,
-                            mappings: table.mappings.map((item, idx) =>
-                              idx === index ? { ...item, targetField: e.target.value } : item,
-                            ),
-                          }))
-                        }
-                        className={cn(
-                          'h-8 rounded-lg border bg-slate-900/90 px-2 text-xs outline-none',
-                          e2eHighlight.mappings ? 'border-emerald-300/40' : 'border-white/20',
-                        )}
-                      />
-                      <input
-                        value={mapping.type}
-                        onChange={(e) =>
-                          updateActiveTable((table) => ({
-                            ...table,
-                            mappings: table.mappings.map((item, idx) =>
-                              idx === index ? { ...item, type: e.target.value } : item,
-                            ),
-                          }))
-                        }
-                        className={cn(
-                          'h-8 rounded-lg border bg-slate-900/90 px-2 text-xs outline-none',
-                          e2eHighlight.mappings ? 'border-emerald-300/40' : 'border-white/20',
-                        )}
-                      />
-                      <label className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-white/20 bg-slate-900/80 px-2 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={mapping.isMasked}
-                          onChange={(e) =>
-                            updateActiveTable((table) => ({
-                              ...table,
-                              mappings: table.mappings.map((item, idx) =>
-                                idx === index ? { ...item, isMasked: e.target.checked } : item,
-                              ),
-                            }))
-                          }
-                          className="h-3.5 w-3.5 accent-cyan-400"
-                        />
-                        mask
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="h-[72vh] min-h-[620px]">
-              <DevelopmentModule
-                aiPayload={devAiPayload}
-                onAiPayloadConsumed={() => setDevAiPayload(null)}
-              />
-            </div>
-          ))}
-      </div>
-    </div>
-  )
+    )
+  }
 
   const renderIntegrationWorkspace = () => (
     <div className="flex h-full flex-col">
@@ -1599,201 +1652,200 @@ GROUP BY customer_id;`,
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="flex min-h-screen">
-        <section className="flex-1 p-6 pr-4">
-          <div className="flex h-[calc(100vh-3rem)] rounded-3xl border border-white/10 bg-white/[0.03]">
-            <aside className="w-72 border-r border-white/10 bg-black/20 p-4">
-              <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.03] p-1">
-                <div className="grid grid-cols-3 gap-1">
-                  {MODULE_OPTIONS.map((module) => {
-                    const Icon = module.icon
-                    const isActive = activeApp === module.id
+        <section className="flex-1 p-6">
+          <div className="flex h-[calc(100vh-3rem)] overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
+            <aside className="flex w-72 border-r border-white/10 bg-black/20">
+              {/* Activity Bar：负责切换 activeApp（仅图标，极窄竖向） */}
+              <div className="w-14 flex-none bg-[#0d1218] p-2">
+                <div className="flex h-full flex-col items-stretch gap-1">
+                  <div className="flex flex-col items-stretch gap-1 pt-1">
+                    {MODULE_OPTIONS.map((module) => {
+                      const Icon = module.icon
+                      const isActive = activeApp === module.id
 
-                    return (
-                      <button
-                        key={module.id}
-                        onClick={() => setActiveApp(module.id)}
-                        className={cn(
-                          'flex flex-col items-center gap-1 rounded-2xl px-2 py-3 text-center transition',
-                          isActive
-                            ? 'border border-cyan-300/60 bg-cyan-400/15 text-cyan-100 shadow-[0_0_0_1px_rgba(103,232,249,0.12)]'
-                            : 'border border-transparent bg-transparent text-slate-500 hover:border-white/10 hover:bg-white/[0.04] hover:text-slate-200',
-                        )}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                        <div className="leading-tight">
-                          <div className="text-[11px] font-medium">{module.label}</div>
-                          <div className="text-[10px] opacity-70">{module.description}</div>
-                        </div>
-                      </button>
-                    )
-                  })}
+                      return (
+                        <button
+                          key={module.id}
+                          onClick={() => setActiveApp(module.id)}
+                          title={module.label}
+                          aria-label={module.label}
+                          className={cn(
+                            'flex w-full items-center justify-center rounded-lg py-2 transition',
+                            'border-l-2',
+                            isActive
+                              ? 'border-blue-500 text-cyan-200'
+                              : 'border-transparent text-slate-600/80 hover:text-slate-200/90',
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <div className="mt-auto pb-1">
+                    <button
+                      type="button"
+                      title="AI 助手（聚焦输入框）"
+                      aria-label="AI 助手（聚焦输入框）"
+                      onClick={() => {
+                        const inputEl = document.getElementById(
+                          'omni-panel-chat-input',
+                        ) as HTMLInputElement | null
+                        inputEl?.focus()
+                      }}
+                      className={cn(
+                        'flex w-full items-center justify-center rounded-lg py-2 transition',
+                        'border-l-2 border-transparent text-slate-600/80 hover:text-slate-200/90',
+                      )}
+                    >
+                      <Bot className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {renderSidebarPanel()}
+              {/* Resource Explorer */}
+              <div className="min-w-0 flex-1 overflow-hidden p-4">{renderSidebarPanel()}</div>
             </aside>
 
             <div className="min-w-0 flex-1">{renderCenterWorkspace()}</div>
-          </div>
-        </section>
 
-        <aside className="w-[380px] shrink-0 p-5 pl-0">
-          <div className="flex h-full flex-col rounded-3xl border border-white/15 bg-white/[0.08] shadow-2xl shadow-violet-900/20 backdrop-blur-xl">
-            <header className="border-b border-white/10 p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <Bot className="h-5 w-5 text-cyan-300" />
-                <h2 className="text-sm font-semibold tracking-wide">Omni Panel</h2>
-              </div>
-            </header>
-
-            <div className="flex-1 space-y-3 overflow-y-auto p-4">
-              {messages.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-white/20 bg-white/[0.03] p-4">
-                  <p className="mb-3 text-xs text-slate-300">
-                    试试这些快捷场景（回车也可直接下达指令）：
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {SUGGESTIONS.map((s) => (
-                      <button
-                        key={s.label}
-                        onClick={() => {
-                          setCommandInput(s.text)
-                          void handleSubmitCommand(s.text)
-                        }}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-slate-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/10"
-                      >
-                        <span className="text-sm leading-none">{s.icon}</span>
-                        <span className="font-medium">{s.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {messages.map((msg) => {
-                if (msg.role === 'user') {
-                  return (
-                    <div
-                      key={msg.id}
-                      className="ml-auto w-fit max-w-[88%] rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300"
-                    >
-                      {msg.content}
-                    </div>
-                  )
-                }
-
-                if (msg.type === 'loading') {
-                  return (
-                    <div
-                      key={msg.id}
-                      className="w-fit max-w-[95%] rounded-2xl border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100"
-                    >
-                      <div className="mb-2 flex items-center gap-2">
-                        <CircleDashed className="h-3.5 w-3.5 animate-spin text-cyan-200" />
-                        <span className="animate-pulse">{msg.content}</span>
-                      </div>
-                      <div className="space-y-1">
-                        {msg.steps?.map((step) => (
-                          <div
-                            key={step.id}
-                            className={cn(
-                              'flex items-center gap-2 text-[12px]',
-                              step.status === 'pending' && 'text-slate-500',
-                              step.status === 'running' && 'text-cyan-300',
-                              step.status === 'success' && 'text-slate-400',
-                            )}
+            {/* Right AI Copilot Panel */}
+            <aside className="w-96 shrink-0 border-l border-white/10 bg-black/20">
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {messages.length === 0 ? (
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                      <div className="mb-2 text-[11px] text-slate-300">试试这些快捷场景（回车也可直接下达指令）：</div>
+                      <div className="flex flex-wrap gap-2">
+                        {SUGGESTIONS.map((s) => (
+                          <button
+                            key={s.label}
+                            onClick={() => {
+                              setCommandInput(s.text)
+                              void handleSubmitCommand(s.text)
+                            }}
+                            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-slate-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/10"
                           >
-                            {step.status === 'running' ? (
-                              <CircleDashed className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <span
-                                className={cn(
-                                  'inline-block h-1.5 w-1.5 rounded-full',
-                                  step.status === 'pending'
-                                    ? 'bg-slate-600'
-                                    : 'bg-slate-400',
-                                )}
-                              />
-                            )}
-                            <span>{step.label}</span>
-                          </div>
+                            <span className="text-sm leading-none">{s.icon}</span>
+                            <span className="font-medium">{s.label}</span>
+                          </button>
                         ))}
                       </div>
                     </div>
-                  )
-                }
-
-                if (msg.type === 'card' && msg.payload) {
-                  const receipt = msg.payload
-                  return (
-                    <article
-                      key={msg.id}
-                      className="w-full rounded-2xl border border-white/20 bg-white/10 p-4 shadow-xl"
-                    >
-                      <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                        <Sparkles className="h-4 w-4 text-violet-200" />
-                        {receipt.title}
-                      </div>
-                      <p className="mb-3 text-xs text-slate-200">{receipt.summary}</p>
-
-                      {receipt.kind === 'e2e' && (
-                        <div className="mb-3 space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs">
-                          <div className="grid grid-cols-1 gap-1 text-[12px] text-slate-200">
-                            <div className="flex items-center justify-between">
-                              <span>🔌 数据源</span>
-                              <span className="text-emerald-200">
-                                MySQL_Sales_Online (待注册)
-                              </span>
+                  ) : (
+                    messages.slice(-60).map((m) => {
+                      if (m.type === 'loading') {
+                        return (
+                          <div
+                            key={m.id}
+                            className="rounded-2xl border border-cyan-300/25 bg-black/30 p-3 text-xs text-cyan-100 shadow-[0_0_0_1px_rgba(103,232,249,0.12)] backdrop-blur"
+                          >
+                            <div className="mb-2 flex items-center gap-2">
+                              <CircleDashed className="h-3.5 w-3.5 animate-spin text-cyan-200" />
+                              <span className="animate-pulse">{m.content}</span>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span>🗄️ 目标表</span>
-                              <span className="text-cyan-200">
-                                ods_order_detail (待新建)
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>🔄 调度策略</span>
-                              <span className="text-slate-300">
-                                全量覆盖 / 一次性执行 / 自动映射字段
-                              </span>
+                            <div className="space-y-1">
+                              {m.steps?.slice(0, 4).map((step) => (
+                                <div
+                                  key={step.id}
+                                  className={cn(
+                                    'flex items-center gap-2 text-[12px]',
+                                    step.status === 'pending' && 'text-slate-500',
+                                    step.status === 'running' && 'text-cyan-300',
+                                    step.status === 'success' && 'text-slate-400',
+                                  )}
+                                >
+                                  {step.status === 'running' ? (
+                                    <CircleDashed className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <span
+                                      className={cn(
+                                        'inline-block h-1.5 w-1.5 rounded-full',
+                                        step.status === 'pending' ? 'bg-slate-600' : 'bg-slate-400',
+                                      )}
+                                    />
+                                  )}
+                                  <span>{step.label}</span>
+                                </div>
+                              ))}
                             </div>
                           </div>
+                        )
+                      }
+
+                      if (m.type === 'card' && m.payload) {
+                        const receipt = m.payload
+                        return (
+                          <div
+                            key={m.id}
+                            className="rounded-2xl border border-white/20 bg-black/30 p-3 backdrop-blur"
+                          >
+                            <div className="mb-1 flex items-center gap-2 text-sm font-semibold">
+                              <Sparkles className="h-4 w-4 text-violet-200" />
+                              {receipt.title}
+                            </div>
+                            <div className="mb-2 text-[11px] text-slate-200/90">{receipt.summary}</div>
+                            <button
+                              onClick={() => applyReceipt(receipt)}
+                              className="w-full rounded-xl border border-cyan-300/50 bg-cyan-400/20 px-3 py-2 text-xs font-medium text-cyan-100 transition hover:bg-cyan-400/30"
+                            >
+                              {receipt.kind === 'development'
+                                ? '应用此开发SQL配置'
+                                : receipt.kind === 'security'
+                                  ? '应用此安全策略'
+                                  : receipt.kind === 'e2e'
+                                    ? '审阅并填充全局工作区'
+                                    : '应用此集成映射配置'}
+                            </button>
+                          </div>
+                        )
+                      }
+
+                      if (m.role === 'user') {
+                        return (
+                          <div
+                            key={m.id}
+                            className="ml-auto w-fit max-w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300"
+                          >
+                            {m.content}
+                          </div>
+                        )
+                      }
+
+                      // assistant fallback
+                      return (
+                        <div
+                          key={m.id}
+                          className="w-fit max-w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300"
+                        >
+                          {m.content}
                         </div>
-                      )}
-                      <button
-                        onClick={() => applyReceipt(receipt)}
-                        className="rounded-lg border border-cyan-300/50 bg-cyan-400/20 px-3 py-1.5 text-xs font-medium text-cyan-100 transition hover:bg-cyan-400/30"
-                      >
-                        {receipt.kind === 'development'
-                          ? '应用此开发SQL配置'
-                          : receipt.kind === 'security'
-                            ? '应用此安全策略'
-                            : receipt.kind === 'e2e'
-                              ? '审阅并填充全局工作区'
-                            : '应用此集成映射配置'}
-                      </button>
-                    </article>
-                  )
-                }
+                      )
+                    })
+                  )}
 
-                return null
-              })}
-              <div ref={messagesEndRef} />
-            </div>
+                  <div ref={messagesEndRef} className="h-px" />
+                </div>
 
-            <footer className="border-t border-white/10 p-3">
-              <input
-                value={commandInput}
-                onChange={(e) => setCommandInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') void handleSubmitCommand()
-                }}
-                placeholder="输入指令并按回车..."
-                className="h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-xs outline-none placeholder:text-slate-400"
-              />
-            </footer>
+                {/* Bottom input base (fixed inside panel) */}
+                <div className="sticky bottom-0 z-10 shrink-0 border-t border-white/10 bg-gray-900/80 p-3 shadow-2xl backdrop-blur-xl">
+                  <input
+                    id="omni-panel-chat-input"
+                    value={commandInput}
+                    onChange={(e) => setCommandInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void handleSubmitCommand()
+                    }}
+                    placeholder="输入指令并按回车..."
+                    className="h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-xs outline-none placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+            </aside>
           </div>
-        </aside>
+        </section>
       </div>
     </main>
   )
