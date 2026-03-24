@@ -1,0 +1,85 @@
+{
+    "[css]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[javascriptreact]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[less]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "cSpell.userWords": [
+        "antv",
+        "bgap",
+        "Datasource",
+        "echarts",
+        "hgap",
+        "Htape",
+        "jdbc",
+        "lgap",
+        "pageable",
+        "rgap",
+        "rlgap",
+        "scrolly",
+        "tgap",
+        "VGAP",
+        "Webui",
+        "xname",
+        "xtooltip",
+        "xtype"
+    ],
+    "css.customData": [".vscode/tailwindcss.json"],
+    "editor.bracketPairColorization.enabled": true,
+    "editor.bracketPairColorization.independentColorPoolPerBracketType": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "editor.defaultColorDecorators": "auto",
+    "editor.detectIndentation": true,
+    "editor.guides.bracketPairs": "active",
+    "editor.insertSpaces": true,
+    "editor.linkedEditing": true,
+    "editor.rulers": [80, 160],
+    "editor.tabSize": 2,
+    "editor.wordWrap": "off",
+    "editor.wordWrapColumn": 160,
+    "eslint.format.enable": true,
+    "eslint.ignoreUntitled": true,
+    "files.autoGuessEncoding": true,
+    "files.autoSave": "afterDelay",
+    "files.eol": "\n",
+    "GitCommitPlugin.ShowEmoji": false,
+    "GitCommitPlugin.Templates": [
+        {
+            "default": true,
+            "templateContent": "<scope> <type>: <subject>",
+            "templateName": "FDL"
+        }
+    ],
+    "javascript.inlayHints.functionLikeReturnTypes.enabled": true,
+    "javascript.inlayHints.parameterNames.enabled": "all",
+    "javascript.inlayHints.parameterTypes.enabled": true,
+    "javascript.inlayHints.propertyDeclarationTypes.enabled": true,
+    "javascript.inlayHints.variableTypes.enabled": true,
+    "native-ascii-converter.letter-case": "Upper case",
+    "tailwindCSS.classAttributes": ["class", "className", "class:list", ".*ClassName", ".*Cls"],
+    "terminal.integrated.env.osx": {
+        "NODE_OPTIONS": "--openssl-legacy-provider"
+    },
+    "terminal.integrated.env.windows": {
+        "NODE_OPTIONS": "--openssl-legacy-provider"
+    },
+    "typescript.tsdk": "node_modules\\typescript\\lib"
+}

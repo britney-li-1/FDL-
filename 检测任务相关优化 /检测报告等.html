@@ -582,141 +582,21 @@
             border-radius: 2px 2px 0 0;
         }
 
-        /* 规则对象页面布局：左右分栏 */
+        /* 规则对象页面布局 */
         .rule-object-layout {
             display: flex;
             flex: 1;
-            gap: 20px;
             overflow: hidden;
             min-height: 0;
         }
 
-        /* 左侧目录树容器 */
-        .tree-panel {
-            width: 320px;
-            background: #fff;
-            border-radius: 2px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            flex-shrink: 0;
-            min-height: 0;
-        }
-
-        /* 目录树标题栏 */
-        .tree-header {
-            height: 52px;
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            border-bottom: 1px solid #e8e8e8;
-            font-size: 16px;
-            font-weight: 500;
-            color: #1f1f1f;
-        }
-
-        /* 数据源和数据连接选择区域 */
-        .tree-select-area {
-            padding: 16px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .tree-select-row {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .tree-select-item {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .tree-select-label {
-            font-size: 13px;
-            color: #666;
-        }
-        .tree-select {
-            height: 32px;
-            border: 1px solid #d9d9d9;
-            border-radius: 4px;
-            padding: 0 10px;
-            font-size: 14px;
-            color: #333;
-            outline: none;
-            background: #fff;
-            cursor: pointer;
-        }
-        .tree-select:hover, .tree-select:focus {
-            border-color: #4766e9;
-        }
-
-        /* 目录树内容区域 */
-        .tree-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px 0;
-        }
-        .tree-content::-webkit-scrollbar {
-            width: 6px;
-        }
-        .tree-content::-webkit-scrollbar-track {
-            background: #f5f5f5;
-        }
-        .tree-content::-webkit-scrollbar-thumb {
-            background: #d9d9d9;
-            border-radius: 3px;
-        }
-        .tree-content::-webkit-scrollbar-thumb:hover {
-            background: #bfbfbf;
-        }
-
-        /* 库表树结构 */
-        .tree-node {
-            padding: 8px 16px;
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            color: #333;
-            transition: background 0.2s;
-        }
-        .tree-node:hover {
-            background: #f5f7fa;
-        }
-        .tree-node.selected {
-            background: #eef3fe;
-            color: #4766e9;
-        }
-        .tree-node-icon {
-            width: 16px;
-            height: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            color: #8c9bb3;
-        }
-        .tree-node-label {
-            flex: 1;
-        }
-
-        /* 空状态在目录树中的样式 */
-        .tree-content .empty-state {
-            padding: 40px 20px;
-        }
-        .tree-content .empty-state-text {
-            font-size: 14px;
-            color: #999;
-        }
-
-        /* 右侧表格容器 */
+        /* 表格容器 */
         .rule-object-table-panel {
             flex: 1;
             background: #fff;
-            border-radius: 2px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            border: 1px solid #e6ebf2;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -742,6 +622,7 @@
             border-bottom: 1px solid #f0f0f0;
             display: flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 12px;
         }
         .rule-object-search-input {
@@ -752,14 +633,25 @@
             padding: 0 32px 0 10px;
             font-size: 14px;
             outline: none;
+            color: #333;
         }
         .rule-object-search-input:hover, .rule-object-search-input:focus {
             border-color: #4766e9;
+            box-shadow: none;
+        }
+        .rule-object-search-input::placeholder {
+            color: #999;
+        }
+        .rule-object-search-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
         }
         .rule-object-search-wrapper {
             position: relative;
-            max-width: 300px;
-            flex: 1;
+            width: 280px;
+            max-width: 100%;
         }
         .rule-object-search-icon {
             position: absolute;
@@ -779,11 +671,13 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            color: #666;
             transition: all 0.2s;
         }
         .rule-object-refresh:hover {
             border-color: #4766e9;
             color: #4766e9;
+            background: #fff;
         }
         .rule-object-refresh:disabled {
             opacity: 0.5;
@@ -814,37 +708,153 @@
         .rule-object-table-container {
             flex: 1;
             overflow: auto;
+            position: relative;
+            background: #fff;
         }
         .rule-object-table {
-            width: 100%;
-            border-collapse: collapse;
+            min-width: 1280px;
         }
-        .rule-object-table th {
-            background: #fafafa;
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: 500;
-            color: #333;
-            font-size: 14px;
-            border-bottom: 1px solid #e8e8e8;
-            white-space: nowrap;
-        }
-        .rule-object-table td {
-            padding: 12px 16px;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 14px;
-            color: #333;
-        }
-        .rule-object-table tbody tr:hover {
-            background: #f5f7fa;
-        }
+        .rule-object-table th:nth-child(1), .rule-object-table td:nth-child(1) { width: 200px; }
+        .rule-object-table th:nth-child(2), .rule-object-table td:nth-child(2) { width: 180px; }
+        .rule-object-table th:nth-child(3), .rule-object-table td:nth-child(3) { width: 120px; }
+        .rule-object-table th:nth-child(4), .rule-object-table td:nth-child(4) { width: 150px; }
+        .rule-object-table th:nth-child(5), .rule-object-table td:nth-child(5) { width: 176px; }
+        .rule-object-table th:nth-child(6), .rule-object-table td:nth-child(6) { width: 110px; text-align: center; }
+        .rule-object-table th:nth-child(7), .rule-object-table td:nth-child(7) { width: 110px; text-align: center; }
+        .rule-object-table th:nth-child(8), .rule-object-table td:nth-child(8) { width: 140px; }
         .rule-object-table .action-btn {
             color: #4766e9;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 500;
         }
         .rule-object-table .action-btn:hover {
             opacity: 0.8;
+        }
+        .rule-object-connection {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            min-width: 0;
+        }
+        .rule-object-connection-name,
+        .rule-object-object-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+        }
+        .rule-object-db-badge {
+            min-width: 28px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid transparent;
+            flex-shrink: 0;
+        }
+        .rule-object-db-badge.mysql {
+            background: #eef8ff;
+            border-color: #cfe9fb;
+            color: #0f6c9c;
+        }
+        .rule-object-db-badge.oracle {
+            background: #fff3f2;
+            border-color: #ffd6d2;
+            color: #c7483f;
+        }
+        .rule-object-db-badge.postgresql {
+            background: #eff6ff;
+            border-color: #d9e7ff;
+            color: #3d67a5;
+        }
+        .rule-object-db-badge.sqlserver {
+            background: #f5f3ff;
+            border-color: #e0d8ff;
+            color: #6253c7;
+        }
+        .rule-object-status-tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 10px;
+            min-height: auto;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 20px;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            background: #fff;
+        }
+        .rule-object-status-tag.result-pass {
+            background: #f6ffed;
+            border-color: #b7eb8f;
+            color: #389e0d;
+        }
+        .rule-object-status-tag.result-skipped {
+            background: #fff7e6;
+            border-color: #ffd591;
+            color: #d48806;
+        }
+        .rule-object-status-tag.result-terminated {
+            background: #f5f5f5;
+            border-color: #d9d9d9;
+            color: #666;
+        }
+        .rule-object-status-tag.result-not-pass,
+        .rule-object-status-tag.result-failed {
+            background: #fff1f0;
+            border-color: #ffa39e;
+            color: #cf1322;
+        }
+        .rule-object-schedule-text {
+            color: #344767;
+            white-space: nowrap;
+        }
+        .related-count-link {
+            color: #4766e9;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .related-count-link:hover {
+            opacity: 0.8;
+        }
+        .rule-object-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            white-space: nowrap;
+        }
+        .related-task-modal-content {
+            width: 760px;
+            max-width: calc(100vw - 48px);
+            max-height: calc(100vh - 96px);
+            display: flex;
+            flex-direction: column;
+        }
+        .related-task-modal-subtitle {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .related-task-modal-table {
+            flex: 1;
+            overflow: auto;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+        }
+        .related-task-modal-empty {
+            padding: 48px 16px;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
         }
 
         /* ================= 新增：表格页面样式 ================= */
@@ -1106,6 +1116,13 @@
         }
 
         /* 冻结列样式 */
+        .col-fixed-left-1 {
+            position: sticky;
+            left: 0;
+            z-index: 6;
+            background-color: #fff;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
         .col-fixed-right-2 {
             position: sticky;
             right: 120px; /* 操作列宽度 */
@@ -1124,6 +1141,7 @@
         }
 
         /* 表头冻结层级提升 */
+        .data-table th.col-fixed-left-1,
         .data-table th.col-fixed-right-2,
         .data-table th.col-fixed-right-1 {
             z-index: 15;
@@ -2599,64 +2617,31 @@
 
             <!-- 规则对象面板 -->
             <div class="content-panel" id="panel-规则对象">
-                <!-- 标题栏 -->
-                <div class="rule-object-page-header">
-                    规则对象
-                </div>
-                <div class="rule-object-layout">
-                    <!-- 左侧目录树 -->
-                    <div class="tree-panel">
-                        <div class="tree-select-area">
-                            <div class="tree-select-row">
-                                <div class="tree-select-item">
-                                    <div class="tree-select-label">数据源类型</div>
-                                    <select class="tree-select" id="dataSourceType" onchange="onDataSourceTypeChange()">
-                                        <option value="">请选择数据源类型</option>
-                                        <option value="mysql">MySQL</option>
-                                        <option value="postgresql">PostgreSQL</option>
-                                        <option value="oracle">Oracle</option>
-                                        <option value="sqlserver">SQL Server</option>
-                                    </select>
-                                </div>
-                                <div class="tree-select-item">
-                                    <div class="tree-select-label">数据连接</div>
-                                    <select class="tree-select" id="dataConnection" onchange="onDataConnectionChange()" disabled>
-                                        <option value="">请选择数据连接</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tree-content" id="treeContent">
-                            <div class="empty-state">
-                                <div class="empty-state-text">请先在上方选择数据连接</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 右侧表格 -->
-                    <div class="rule-object-table-panel">
-                        <div class="rule-object-search">
+                <div class="page-card">
+                    <div class="page-header-row">对象清单</div>
+                    <div class="filter-row rule-object-search">
+                        <div class="rule-object-search-actions">
                             <div class="rule-object-search-wrapper">
-                                <input type="text" class="rule-object-search-input" id="tableSearchInput" placeholder="搜索表名称" oninput="onTableSearch()" disabled>
+                                <input type="text" class="rule-object-search-input" id="tableSearchInput" placeholder="搜索数据连接 / 库 / 表" oninput="onTableSearch()">
                                 <svg class="rule-object-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="11" cy="11" r="8"></circle>
                                     <path d="m21 21-4.35-4.35"></path>
                                 </svg>
                             </div>
-                            <div class="rule-object-refresh" id="refreshBtn" onclick="refreshTable()" disabled title="刷新">
+                            <div class="rule-object-refresh" id="refreshBtn" onclick="refreshTable()" title="刷新">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                                 </svg>
                             </div>
                         </div>
-                        <div class="rule-object-table-container" id="ruleObjectTableContainer">
-                            <div class="empty-state">
-                                <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="2 2"></rect>
-                                    <path d="M9 9h6M9 15h6"></path>
-                                </svg>
-                                <div class="empty-state-text">暂无内容</div>
-                            </div>
+                    </div>
+                    <div class="table-container rule-object-table-container" id="ruleObjectTableContainer">
+                        <div class="empty-state">
+                            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="2 2"></rect>
+                                <path d="M9 9h6M9 15h6"></path>
+                            </svg>
+                            <div class="empty-state-text">暂无内容</div>
                         </div>
                     </div>
                 </div>
@@ -2835,6 +2820,17 @@
             <div class="status-modal-actions">
                 <button class="modal-btn" onclick="closeStatusModal()">取消</button>
                 <button class="modal-btn primary" onclick="saveStatus()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-modal" id="relatedTasksModal">
+        <div class="status-modal-content related-task-modal-content">
+            <div class="status-modal-title">相关检测任务</div>
+            <div class="related-task-modal-subtitle" id="relatedTasksSubtitle">--</div>
+            <div class="related-task-modal-table" id="relatedTasksContent"></div>
+            <div class="status-modal-actions">
+                <button class="modal-btn primary" onclick="closeRelatedTasksModal()">关闭</button>
             </div>
         </div>
     </div>
@@ -3591,13 +3587,6 @@
         // ================= 规则对象页面相关函数 =================
         
         // 模拟数据
-        const mockDataConnections = {
-            'mysql': ['MySQL连接1', 'MySQL连接2', 'MySQL连接3'],
-            'postgresql': ['PostgreSQL连接1', 'PostgreSQL连接2'],
-            'oracle': ['Oracle连接1', 'Oracle连接2', 'Oracle连接3'],
-            'sqlserver': ['SQL Server连接1', 'SQL Server连接2']
-        };
-
         const mockTables = {
             'MySQL连接1': {
                 'database1': ['table1', 'table2', 'table3', 'table4'],
@@ -3634,88 +3623,65 @@
             ]
         };
 
-        let currentSelectedDatabase = null;
-        let currentTableData = [];
+        const ruleObjectTableData = [
+            { id: 'obj-1', connectionName: '订单中心', dbType: 'mysql', databaseName: 'order_center', tableName: 'order_info', scheduleStatus: '已开启', scheduleCount: 3, lastResult: '检测通过', lastDetectTime: '2026-03-24 09:12:30', relatedTaskCount: 3, relatedIssueCount: 1, relatedTasks: [
+                { name: '订单主表完整性检测', scheduleType: '每日', lastRunTime: '2026-03-24 09:12:30', status: '检测通过' },
+                { name: '订单金额波动检测', scheduleType: '每小时', lastRunTime: '2026-03-24 08:00:00', status: '检测通过' },
+                { name: '订单状态枚举检测', scheduleType: '每日', lastRunTime: '2026-03-23 23:00:00', status: '检测不通过' }
+            ] },
+            { id: 'obj-2', connectionName: '订单中心', dbType: 'mysql', databaseName: 'order_center', tableName: 'order_item', scheduleStatus: '已开启', scheduleCount: 2, lastResult: '检测不通过', lastDetectTime: '2026-03-24 09:10:12', relatedTaskCount: 2, relatedIssueCount: 7, relatedTasks: [
+                { name: '订单明细重复值检测', scheduleType: '每日', lastRunTime: '2026-03-24 09:10:12', status: '检测不通过' },
+                { name: '订单明细空值检测', scheduleType: '每小时', lastRunTime: '2026-03-24 08:00:00', status: '检测通过' }
+            ] },
+            { id: 'obj-3', connectionName: '会员主数据', dbType: 'mysql', databaseName: 'member_center', tableName: 'member_profile', scheduleStatus: '未开启', scheduleCount: 0, lastResult: '跳过检测', lastDetectTime: '2026-03-23 22:18:45', relatedTaskCount: 1, relatedIssueCount: 0, relatedTasks: [
+                { name: '会员画像基础质量检测', scheduleType: '手动', lastRunTime: '2026-03-23 22:18:45', status: '跳过检测' }
+            ] },
+            { id: 'obj-4', connectionName: '财务共享库', dbType: 'oracle', databaseName: 'fin_shared', tableName: 'voucher_detail', scheduleStatus: '已开启', scheduleCount: 4, lastResult: '检测失败', lastDetectTime: '2026-03-24 08:43:09', relatedTaskCount: 4, relatedIssueCount: 2, relatedTasks: [
+                { name: '凭证明细完整性检测', scheduleType: '每日', lastRunTime: '2026-03-24 08:43:09', status: '检测失败' },
+                { name: '凭证明细主外键检测', scheduleType: '每日', lastRunTime: '2026-03-24 07:30:00', status: '检测通过' },
+                { name: '凭证明细金额平衡检测', scheduleType: '每小时', lastRunTime: '2026-03-24 07:00:00', status: '检测通过' },
+                { name: '凭证明细重复值检测', scheduleType: '每日', lastRunTime: '2026-03-23 23:10:00', status: '终止检测' }
+            ] },
+            { id: 'obj-5', connectionName: '财务共享库', dbType: 'oracle', databaseName: 'fin_shared', tableName: 'account_subject', scheduleStatus: '未配置', scheduleCount: 0, lastResult: '终止检测', lastDetectTime: '2026-03-22 18:06:33', relatedTaskCount: 0, relatedIssueCount: 0, relatedTasks: [] },
+            { id: 'obj-6', connectionName: '营销分析域', dbType: 'postgresql', databaseName: 'marketing_ads', tableName: 'campaign_summary', scheduleStatus: '已开启', scheduleCount: 2, lastResult: '检测通过', lastDetectTime: '2026-03-24 07:30:00', relatedTaskCount: 2, relatedIssueCount: 0, relatedTasks: [
+                { name: '活动汇总完整性检测', scheduleType: '每日', lastRunTime: '2026-03-24 07:30:00', status: '检测通过' },
+                { name: '活动汇总口径一致性检测', scheduleType: '每日', lastRunTime: '2026-03-24 07:20:00', status: '检测通过' }
+            ] },
+            { id: 'obj-7', connectionName: '营销分析域', dbType: 'postgresql', databaseName: 'marketing_ads', tableName: 'user_conversion', scheduleStatus: '未开启', scheduleCount: 0, lastResult: '检测不通过', lastDetectTime: '2026-03-23 12:55:41', relatedTaskCount: 1, relatedIssueCount: 3, relatedTasks: [
+                { name: '用户转化漏斗检测', scheduleType: '手动', lastRunTime: '2026-03-23 12:55:41', status: '检测不通过' }
+            ] },
+            { id: 'obj-8', connectionName: '主数据治理', dbType: 'sqlserver', databaseName: 'mdm_core', tableName: 'supplier_master', scheduleStatus: '已开启', scheduleCount: 5, lastResult: '检测失败', lastDetectTime: '2026-03-24 06:45:18', relatedTaskCount: 5, relatedIssueCount: 6, relatedTasks: [
+                { name: '供应商主数据唯一性检测', scheduleType: '每日', lastRunTime: '2026-03-24 06:45:18', status: '检测失败' },
+                { name: '供应商主数据完整性检测', scheduleType: '每日', lastRunTime: '2026-03-24 06:30:00', status: '检测通过' },
+                { name: '供应商证照有效期检测', scheduleType: '每日', lastRunTime: '2026-03-24 06:00:00', status: '检测通过' },
+                { name: '供应商地址规范检测', scheduleType: '每周', lastRunTime: '2026-03-23 22:00:00', status: '检测不通过' },
+                { name: '供应商黑名单比对检测', scheduleType: '每日', lastRunTime: '2026-03-23 21:00:00', status: '终止检测' }
+            ] }
+        ];
 
-        // 数据源类型改变
-        function onDataSourceTypeChange() {
-            const dataSourceType = document.getElementById('dataSourceType').value;
-            const dataConnection = document.getElementById('dataConnection');
-            
-            // 重置数据连接
-            dataConnection.innerHTML = '<option value="">请选择数据连接</option>';
-            dataConnection.disabled = !dataSourceType;
-            
-            if (dataSourceType) {
-                const connections = mockDataConnections[dataSourceType] || [];
-                connections.forEach(conn => {
-                    const option = document.createElement('option');
-                    option.value = conn;
-                    option.textContent = conn;
-                    dataConnection.appendChild(option);
-                });
-            }
-            
-            // 重置目录树和表格
-            resetTreeAndTable();
+        let currentTableData = [...ruleObjectTableData];
+
+        function getDbTypeBadge(dbType) {
+            if (dbType === 'mysql') return 'My';
+            if (dbType === 'oracle') return 'Or';
+            if (dbType === 'postgresql') return 'Pg';
+            if (dbType === 'sqlserver') return 'SS';
+            return 'DB';
         }
 
-        // 数据连接改变
-        function onDataConnectionChange() {
-            const dataConnection = document.getElementById('dataConnection').value;
-            const treeContent = document.getElementById('treeContent');
-            const tableSearchInput = document.getElementById('tableSearchInput');
-            const refreshBtn = document.getElementById('refreshBtn');
-            
-            if (!dataConnection) {
-                resetTreeAndTable();
-                return;
+        function getScheduleDisplayText(item) {
+            if (item.scheduleStatus === '已开启') {
+                return '已开启：' + (item.scheduleCount || 0);
             }
-            
-            // 启用搜索框和刷新按钮
-            tableSearchInput.disabled = false;
-            refreshBtn.disabled = false;
-            
-            // 显示库表信息
-            const databases = mockTables[dataConnection] || {};
-            treeContent.innerHTML = '';
-            
-            if (Object.keys(databases).length === 0) {
-                treeContent.innerHTML = '<div class="empty-state"><div class="empty-state-text">暂无库表信息</div></div>';
-                return;
-            }
-            
-            Object.keys(databases).forEach(dbName => {
-                const dbNode = document.createElement('div');
-                dbNode.className = 'tree-node';
-                dbNode.dataset.database = dbName;
-                dbNode.onclick = () => selectDatabase(dbName);
-                
-                dbNode.innerHTML = `
-                    <div class="tree-node-icon">📁</div>
-                    <div class="tree-node-label">${dbName}</div>
-                `;
-                
-                treeContent.appendChild(dbNode);
-            });
+            return item.scheduleStatus;
         }
 
-        // 选择数据库
-        function selectDatabase(databaseName) {
-            // 更新选中状态
-            document.querySelectorAll('.tree-node').forEach(node => {
-                node.classList.remove('selected');
-            });
-            const selectedNode = document.querySelector(`.tree-node[data-database="${databaseName}"]`);
-            if (selectedNode) {
-                selectedNode.classList.add('selected');
-            }
-            
-            currentSelectedDatabase = databaseName;
-            currentTableData = mockTableData[databaseName] || [];
-            
-            // 显示表格
-            renderTable(currentTableData);
+        function getResultStatusClass(result) {
+            if (result === '检测通过') return 'result-pass';
+            if (result === '检测不通过') return 'result-not-pass';
+            if (result === '检测失败') return 'result-failed';
+            if (result === '终止检测') return 'result-terminated';
+            return 'result-skipped';
         }
 
         // 渲染表格
@@ -3736,26 +3702,62 @@
             }
             
             let html = `
-                <table class="rule-object-table">
+                <table class="data-table rule-object-table">
                     <thead>
                         <tr>
-                            <th>表名</th>
-                            <th>检测任务数</th>
-                            <th>检测规则数</th>
-                            <th>操作</th>
+                            <th class="col-fixed-left-1">检测表</th>
+                            <th>数据连接</th>
+                            <th>定时调度</th>
+                            <th>最近一次检测结果</th>
+                            <th>最近检测时间</th>
+                            <th>关联任务数</th>
+                            <th>关联问题数</th>
+                            <th class="col-fixed-right-1">操作</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
             
             tableData.forEach(item => {
+                const dbBadge = getDbTypeBadge(item.dbType);
+                const scheduleDisplayText = getScheduleDisplayText(item);
+                const resultStatusClass = getResultStatusClass(item.lastResult);
+
                 html += `
                     <tr>
-                        <td>${item.name}</td>
-                        <td>${item.taskCount}</td>
-                        <td>${item.ruleCount}</td>
+                        <td class="col-fixed-left-1">
+                            <span class="rule-object-object-name" title="${item.databaseName}.${item.tableName}">${item.databaseName}.${item.tableName}</span>
+                        </td>
                         <td>
-                            <span class="action-btn" onclick="createDetectionTask('${item.name}')">新建检测任务</span>
+                            <div class="rule-object-connection">
+                                <span class="rule-object-db-badge ${item.dbType}">${dbBadge}</span>
+                                <span class="rule-object-connection-name" title="${item.connectionName}">${item.connectionName}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="rule-object-schedule-text">${scheduleDisplayText}</span>
+                        </td>
+                        <td>
+                            <span class="rule-object-status-tag ${resultStatusClass}">${item.lastResult}</span>
+                        </td>
+                        <td>${item.lastDetectTime}</td>
+                        <td>
+                            <span class="related-count-link" onclick="openRelatedTasksModal('${item.id}')">${item.relatedTaskCount}</span>
+                        </td>
+                        <td>${item.relatedIssueCount}</td>
+                        <td class="col-fixed-right-1">
+                            <div class="action-icons">
+                                <span class="action-icon" data-tooltip="查看详情" onclick="viewObjectDetail('${item.connectionName}', '${item.databaseName}', '${item.tableName}')">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                    </svg>
+                                </span>
+                                <span class="action-icon" data-tooltip="添加任务" onclick="createDetectionTask('${item.connectionName}', '${item.databaseName}', '${item.tableName}')">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                        <path d="M17 3H7a2 2 0 0 0-2 2v14l4-3h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-1 8h-3v3h-2v-3H8V9h3V6h2v3h3v2z"/>
+                                    </svg>
+                                </span>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -3772,68 +3774,92 @@
         // 表格搜索
         function onTableSearch() {
             const searchValue = document.getElementById('tableSearchInput').value.toLowerCase().trim();
-            
-            if (!currentSelectedDatabase || !currentTableData) {
-                return;
-            }
-            
+
             if (!searchValue) {
                 renderTable(currentTableData);
                 return;
             }
             
             const filteredData = currentTableData.filter(item => 
-                item.name.toLowerCase().includes(searchValue)
+                item.connectionName.toLowerCase().includes(searchValue) ||
+                item.databaseName.toLowerCase().includes(searchValue) ||
+                item.tableName.toLowerCase().includes(searchValue)
             );
             
             renderTable(filteredData);
         }
 
-        // 重置目录树和表格
-        function resetTreeAndTable() {
-            const treeContent = document.getElementById('treeContent');
-            const tableContainer = document.getElementById('ruleObjectTableContainer');
-            const tableSearchInput = document.getElementById('tableSearchInput');
-            const refreshBtn = document.getElementById('refreshBtn');
-            
-            treeContent.innerHTML = '<div class="empty-state"><div class="empty-state-text">请先在上方选择数据连接</div></div>';
-            tableContainer.innerHTML = `
-                <div class="empty-state">
-                    <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                        <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="2 2"></rect>
-                        <path d="M9 9h6M9 15h6"></path>
-                    </svg>
-                    <div class="empty-state-text">暂无内容</div>
-                </div>
-            `;
-            tableSearchInput.value = '';
-            tableSearchInput.disabled = true;
-            refreshBtn.disabled = true;
-            currentSelectedDatabase = null;
-            currentTableData = [];
+        function viewObjectDetail(connectionName, databaseName, tableName) {
+            alert('查看详情: ' + connectionName + ' / ' + databaseName + '.' + tableName);
+        }
+
+        function openRelatedTasksModal(objectId) {
+            const modal = document.getElementById('relatedTasksModal');
+            const subtitle = document.getElementById('relatedTasksSubtitle');
+            const content = document.getElementById('relatedTasksContent');
+            const currentItem = ruleObjectTableData.find(item => item.id === objectId);
+
+            if (!modal || !subtitle || !content || !currentItem) {
+                return;
+            }
+
+            subtitle.textContent = currentItem.connectionName + ' / ' + currentItem.databaseName + '.' + currentItem.tableName;
+
+            const relatedTasks = currentItem.relatedTasks || [];
+            if (relatedTasks.length === 0) {
+                content.innerHTML = '<div class="related-task-modal-empty">暂无关联检测任务</div>';
+            } else {
+                let html = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>任务名称</th>
+                                <th>触发方式</th>
+                                <th>最近运行时间</th>
+                                <th>最近结果</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                relatedTasks.forEach(task => {
+                    const taskResultClass = getResultStatusClass(task.status);
+                    html += `
+                        <tr>
+                            <td>${task.name}</td>
+                            <td>${task.scheduleType}</td>
+                            <td>${task.lastRunTime}</td>
+                            <td><span class="rule-object-status-tag ${taskResultClass}">${task.status}</span></td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                content.innerHTML = html;
+            }
+
+            modal.classList.add('show');
+        }
+
+        function closeRelatedTasksModal() {
+            const modal = document.getElementById('relatedTasksModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
         }
 
         // 新建检测任务
-        function createDetectionTask(tableName) {
-            alert('新建检测任务: ' + tableName);
-            // 这里可以添加跳转到新建检测任务页面的逻辑
+        function createDetectionTask(connectionName, databaseName, tableName) {
+            alert('添加任务: ' + connectionName + ' / ' + databaseName + '.' + tableName);
         }
 
         // 刷新表格
         function refreshTable() {
-            if (!currentSelectedDatabase) {
-                return;
-            }
-            
-            // 重新加载当前数据库的表格数据
-            currentTableData = mockTableData[currentSelectedDatabase] || [];
-            const searchValue = document.getElementById('tableSearchInput').value;
-            
-            if (searchValue) {
-                onTableSearch();
-            } else {
-                renderTable(currentTableData);
-            }
+            currentTableData = [...ruleObjectTableData];
+            onTableSearch();
         }
 
         // 检测报告图表初始化
@@ -4613,6 +4639,7 @@
 
         // 页面加载时，如果检测报告面板是激活的，初始化图表
         document.addEventListener('DOMContentLoaded', function() {
+            renderTable(ruleObjectTableData);
             const reportPanel = document.getElementById('panel-检测报告');
             if (reportPanel && reportPanel.classList.contains('active')) {
                 initReportCharts();

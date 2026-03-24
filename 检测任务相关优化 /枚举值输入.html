@@ -1,240 +1,228 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>多值输入方案全集展示</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: #f3f4f6;
-      color: #333;
-      padding: 20px;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    .card {
-      background: #fff;
-      border-radius: 8px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .card-title {
-      margin-top: 0;
-      color: #111827;
-      border-bottom: 1px solid #e5e7eb;
-      padding-bottom: 10px;
-      margin-bottom: 16px;
-      font-size: 18px;
-    }
-    .description {
-      font-size: 13px;
-      color: #6b7280;
-      margin-bottom: 16px;
-    }
-    
-    /* ================= 方案一：经典内联标签 ================= */
-    .demo1-container {
-      display: flex; flex-wrap: wrap; align-items: center; border: 1px solid #d1d5db;
-      padding: 4px; border-radius: 6px; min-height: 42px; width: 100%; max-width: 400px;
-    }
-    .demo1-tag {
-      background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; 
-      margin: 4px; display: flex; align-items: center; font-size: 14px;
-    }
-    .demo1-tag .close { margin-left: 6px; cursor: pointer; font-weight: bold; color: #0c4a6e; }
-    .demo1-input { border: none; outline: none; flex-grow: 1; min-width: 120px; padding: 4px; font-size: 14px; }
+<meta charset="UTF-8">
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; background: #f9fafb; padding: 40px; }
+  
+  .tag-input-wrapper { width: 500px; font-size: 14px; }
 
-    /* ================= 方案二：多行文本域 ================= */
-    .demo2-textarea {
-      width: 100%; max-width: 400px; height: 100px; padding: 10px; border: 1px solid #d1d5db;
-      border-radius: 6px; font-size: 14px; line-height: 1.5; resize: vertical; outline: none;
-    }
-    .demo2-textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+  /* 输入框主区域 */
+  .tag-container {
+    display: flex; flex-wrap: wrap; align-items: center; border: 1px solid #d1d5db;
+    background: #fff; padding: 6px; border-radius: 8px; min-height: 48px;
+    transition: all 0.2s; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .tag-container:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
 
-    /* ================= 方案三：动态表单项 ================= */
-    .demo3-list { max-width: 400px; }
-    .demo3-row { display: flex; margin-bottom: 8px; }
-    .demo3-row input {
-      flex: 1; padding: 8px; margin-right: 8px; border: 1px solid #d1d5db; border-radius: 6px; outline: none;
-    }
-    .demo3-btn {
-      padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; background: #f9fafb; transition: all 0.2s;
-    }
-    .demo3-btn:hover:not(:disabled) { background: #f3f4f6; }
-    .demo3-btn-remove { color: #dc2626; }
-    .demo3-btn-remove:disabled { color: #aaa; cursor: not-allowed; }
-    .demo3-btn-add { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; width: 100%; text-align: center; font-weight: 500;}
-    .demo3-btn-add:hover { background: #dbeafe; }
+  /* 标签的基础样式 */
+  .tag {
+    background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;
+    padding: 2px 8px; border-radius: 6px; margin: 4px; display: flex; align-items: center;
+    transition: background 0.2s;
+  }
+  
+  /* 标签文字：支持点击编辑的视觉暗示 */
+  .tag-text {
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
+    transition: border-color 0.2s;
+    line-height: 20px;
+  }
+  .tag-text:hover { border-color: #64748b; color: #0f172a; } /* Hover时提示可点击 */
 
-    /* ================= 方案四：推荐最佳实践 ================= */
-    .demo4-group { display: flex; width: 100%; max-width: 400px; margin-bottom: 12px; }
-    .demo4-input { flex: 1; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px 0 0 6px; outline: none; transition: border-color 0.2s; }
-    .demo4-input:focus { border-color: #3b82f6; z-index: 1; }
-    .demo4-add-btn { 
-      padding: 8px 16px; border: 1px solid #2563eb; background: #3b82f6; color: white; 
-      border-radius: 0 6px 6px 0; cursor: pointer; font-weight: 500; transition: background 0.2s;
-    }
-    .demo4-add-btn:hover { background: #2563eb; }
-    .demo4-tags-area { 
-      display: flex; flex-wrap: wrap; width: 100%; max-width: 400px; min-height: 44px; 
-      border: 1px dashed #d1d5db; padding: 4px; border-radius: 6px; background: #f9fafb; text-align: left;
-    }
-    .demo4-tags-area:empty::before { content: '添加的值会显示在这里...'; color: #9ca3af; font-size: 13px; margin: auto 8px; }
-    .demo4-tag { 
-      background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; padding: 4px 8px; 
-      border-radius: 4px; margin: 4px; display: inline-flex; align-items: center; font-size: 13px;
-    }
-    .demo4-tag .close { margin-left: 6px; cursor: pointer; color: #60a5fa; font-weight: bold; }
-    .demo4-tag .close:hover { color: #ef4444; }
+  /* 内联编辑使用的输入框（默认隐藏） */
+  .tag-edit-input {
+    display: none; background: #fff; border: 1px solid #93c5fd; border-radius: 4px;
+    outline: none; font-size: 14px; color: #1e293b; padding: 0 4px; margin: 0 -4px;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+  }
 
-  </style>
+  /* 删除按钮 */
+  .tag .close { margin-left: 6px; color: #94a3b8; cursor: pointer; font-size: 16px; transition: color 0.1s; }
+  .tag .close:hover { color: #ef4444; }
+
+  /* 主输入区域 */
+  .input-area { display: flex; flex: 1; min-width: 150px; align-items: center; position: relative; }
+  .tag-input { border: none; outline: none; width: 100%; padding: 4px; font-size: 14px; background: transparent; color: #1f2937; }
+
+  /* Enter 徽标和底部文案同上... */
+  .enter-badge {
+    position: absolute; right: 8px; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;
+    padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: monospace; transition: all 0.2s; pointer-events: none;
+  }
+  .tag-container.is-typing .enter-badge {
+    background: #eff6ff; color: #2563eb; border-color: #93c5fd; font-weight: bold; transform: translateY(-1px);
+  }
+  .dynamic-helper { font-size: 12px; color: #6b7280; margin-top: 8px; min-height: 18px; }
+  .dynamic-helper span { color: #2563eb; font-weight: 500; }
+</style>
 </head>
 <body>
 
-<div class="container">
-  <h2>多值输入方案演示</h2>
-  <p style="color: #666; margin-bottom: 24px;">不论输入诸如 <code>1,2</code> 包含逗号的字符串，均不会被错误截断，因为我们采用了更显性的区隔形式。</p>
+  <div class="tag-input-wrapper">
+    <label style="display: block; font-weight: 500; margin-bottom: 8px; color: #374151;">
+      支持“内联修改”与“退格回退”的高级多值输入
+    </label>
 
-  <!-- 💡 推荐：方案四（最佳实践）-->
-  <div class="card" style="border: 2px solid #3b82f6;">
-    <h3 class="card-title">🏆 最佳交互实践（强烈推荐）</h3>
-    <p class="description">
-      保留了美观的标签外观，拥有明确的「添加」按钮。同时具备<strong>防呆机制</strong>：无论用户是<strong>回车、点击添加，还是点别处失去焦点</strong>，都会自动生成标签，绝不丢失数据。
-    </p>
-    
-    <div class="demo4-group">
-      <input type="text" id="demo4-input" class="demo4-input" placeholder="输入任意值 (例: 1,2)">
-      <button type="button" class="demo4-add-btn" id="demo4-btn">添加</button>
-    </div>
-    <div class="demo4-tags-area" id="demo4-tags-area"></div>
-  </div>
-
-  <!-- 方案一 -->
-  <div class="card">
-    <h3 class="card-title">方案 1：经典内联标签（纯回车触发）</h3>
-    <p class="description">UI 最极简紧凑。缺点是传统用户可能不知道需要敲击“回车键”才能生效。</p>
-    
-    <div class="demo1-container" id="demo1-container">
-      <input type="text" class="demo1-input" id="demo1-input" placeholder="输入后按回车键...">
-    </div>
-  </div>
-
-  <!-- 方案二 -->
-  <div class="card">
-    <h3 class="card-title">方案 2：多行文本域（换行分隔）</h3>
-    <p class="description">最适合用户有大量数据需要从 Excel 或记事本“复制粘贴”的场景，零学习成本。</p>
-    
-    <textarea class="demo2-textarea" placeholder="请输入值：&#10;苹果&#10;价格1,2&#10;香蕉"></textarea>
-  </div>
-
-  <!-- 方案三 -->
-  <div class="card">
-    <h3 class="card-title">方案 3：动态表单项（新增/删除行）</h3>
-    <p class="description">强显性，界限最分明。适合输入值是较长文本，或者数量普遍不多的场景。</p>
-    
-    <div class="demo3-list" id="demo3-list">
-      <div class="demo3-row">
-        <input type="text" placeholder="输入一个值，例如：1,2">
-        <button class="demo3-btn demo3-btn-remove" onclick="removeDemo3Row(this)" disabled>删除</button>
+    <div class="tag-container" id="tag-container">
+      <div class="input-area">
+        <input type="text" class="tag-input" id="tag-input" placeholder="输入内容后按 Enter 键...">
+        <div class="enter-badge" id="enter-badge">↵ Enter</div>
       </div>
     </div>
-    <div style="max-width: 400px; margin-top: 8px;">
-      <button class="demo3-btn demo3-btn-add" onclick="addDemo3Row()">+ 新增一个值</button>
+
+    <div class="dynamic-helper" id="helper-text">
+       提示：点击已生成的标签即可修改，或使用退格键 (Backspace) 快速回退。
     </div>
   </div>
 
-</div>
+  <script>
+    const input = document.getElementById('tag-input');
+    const container = document.getElementById('tag-container');
+    const helperText = document.getElementById('helper-text');
+    const defaultHelperHtml = '提示：点击已生成的标签即可修改，或使用退格键 (Backspace) 快速回退。';
 
-<script>
-  /* ================= 方案一：经典内联标签 JS ================= */
-  const demo1Input = document.getElementById('demo1-input');
-  const demo1Container = document.getElementById('demo1-container');
+    // 初始化两个示例标签
+    createTag('苹果');
+    createTag('价格1,2');
 
-  demo1Input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault(); // 阻止默认提交
-      const text = this.value.trim();
-      if (text !== '') {
-        const tag = document.createElement('div');
-        tag.className = 'demo1-tag';
-        tag.innerHTML = `<span>${text}</span> <span class="close" onclick="this.parentElement.remove()">×</span>`;
-        demo1Container.insertBefore(tag, demo1Input);
-        this.value = '';
+    // ========== 1. 主输入框逻辑 ========== //
+
+    input.addEventListener('input', function() {
+      const val = this.value.trim();
+      if (val.length > 0) {
+        container.classList.add('is-typing');
+        helperText.innerHTML = `按 <span>回车键 (Enter)</span> 添加`;
+      } else {
+        container.classList.remove('is-typing');
+        helperText.innerHTML = defaultHelperHtml;
       }
-    }
-  });
+    });
 
-  /* ================= 方案三：动态表单项 JS ================= */
-  function addDemo3Row() {
-    const list = document.getElementById('demo3-list');
-    const newRow = document.createElement('div');
-    newRow.className = 'demo3-row';
-    newRow.innerHTML = `
-      <input type="text" placeholder="输入另一个值...">
-      <button class="demo3-btn demo3-btn-remove" onclick="removeDemo3Row(this)">删除</button>
-    `;
-    list.appendChild(newRow);
-    checkDemo3DelButtons();
-  }
+    input.addEventListener('keydown', function(e) {
+      // 回车生成标签
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const text = this.value.trim();
+        if (text !== '') {
+          createTag(text);
+          this.value = '';
+          container.classList.remove('is-typing');
+          helperText.innerHTML = defaultHelperHtml;
+        }
+      }
+      // ★ 退格键（Backspace）回退修改机制 ★
+      // 当输入框为空，且按下了退格键，则把最后一个标签“吸”回来重新编辑
+      else if (e.key === 'Backspace' && this.value === '') {
+        const tags = container.querySelectorAll('.tag');
+        if (tags.length > 0) {
+          e.preventDefault(); // 阻止浏览器默认行为
+          const lastTag = tags[tags.length - 1];
+          const text = lastTag.querySelector('.tag-text').textContent;
+          this.value = text;              // 将文字放回主输入框
+          lastTag.remove();               // 移除最后一个标签
+          container.classList.add('is-typing'); // 点亮状态
+          helperText.innerHTML = `正在重新编辑上一个项...`;
+        }
+      }
+    });
 
-  function removeDemo3Row(btn) {
-    btn.parentElement.remove();
-    checkDemo3DelButtons();
-  }
+    // 失去焦点防呆机制（为了防止和点击标签编辑冲突，加100ms延迟）
+    input.addEventListener('blur', function() {
+      setTimeout(() => {
+        const text = this.value.trim();
+        if (text !== '') {
+          createTag(text);
+          this.value = '';
+          container.classList.remove('is-typing');
+          helperText.innerHTML = defaultHelperHtml;
+        }
+      }, 100);
+    });
 
-  function checkDemo3DelButtons() {
-    const rows = document.querySelectorAll('#demo3-list .demo3-row');
-    const delBtns = document.querySelectorAll('#demo3-list .demo3-btn-remove');
-    if (rows.length <= 1) {
-      delBtns[0].disabled = true;
-    } else {
-      delBtns.forEach(btn => btn.disabled = false);
-    }
-  }
+    // ========== 2. 核心：动态创建支持修改的标签 ========== //
 
-  /* ================= 方案四：推荐最佳实践 JS ================= */
-  const demo4Input = document.getElementById('demo4-input');
-  const demo4Btn = document.getElementById('demo4-btn');
-  const demo4Area = document.getElementById('demo4-tags-area');
-
-  // 核心添加逻辑封装
-  function createDemo4Tag() {
-    const text = demo4Input.value.trim();
-    if (text !== '') {
+    function createTag(text) {
       const tag = document.createElement('div');
-      tag.className = 'demo4-tag';
-      tag.innerHTML = `<span>${text}</span> <span class="close" onclick="this.parentElement.remove()">×</span>`;
-      demo4Area.appendChild(tag);
-      demo4Input.value = ''; // 清空输入框
+      tag.className = 'tag';
+
+      // 文本显示区
+      const span = document.createElement('span');
+      span.className = 'tag-text';
+      span.textContent = text; // testContent天生防XSS
+      span.title = '点击修改';
+
+      // 内联编辑框
+      const editInput = document.createElement('input');
+      editInput.type = 'text';
+      editInput.className = 'tag-edit-input';
+      editInput.value = text;
+      
+      // 删除按钮
+      const closeBtn = document.createElement('span');
+      closeBtn.className = 'close';
+      closeBtn.innerHTML = '×';
+
+      // -------------- ★ 标签修改逻辑 ★ --------------
+
+      // 点击文字：进入编辑模式
+      span.addEventListener('click', (e) => {
+        e.stopPropagation(); // 阻止冒泡触发外部 blur
+        // 视觉切换
+        span.style.display = 'none';
+        closeBtn.style.display = 'none';
+        editInput.style.display = 'inline-block';
+        
+        // 动态宽度计算，让输入框贴合文字长度
+        editInput.style.width = Math.max(3, editInput.value.length) + 'ch';
+        
+        editInput.focus();
+        // 光标自动移到文字最后
+        editInput.selectionStart = editInput.selectionEnd = editInput.value.length; 
+      });
+
+      // 输入框动态伸缩（根据打字长度）
+      editInput.addEventListener('input', function() {
+        this.style.width = Math.max(3, this.value.length) + 'ch';
+      });
+
+      // 保存修改的功能函数
+      const finishEdit = () => {
+        const newVal = editInput.value.trim();
+        if (newVal === '') {
+          // 如果用户把文字全删光了，视同直接删除该标签
+          tag.remove(); 
+        } else {
+          // 否则更新文字内容并恢复正常状态
+          span.textContent = newVal;
+          editInput.value = newVal; // 同步数据
+          span.style.display = 'inline-block';
+          closeBtn.style.display = 'inline-block';
+          editInput.style.display = 'none';
+        }
+      };
+
+      // 失去焦点时保存
+      editInput.addEventListener('blur', finishEdit);
+
+      // 敲击回车时保存
+      editInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          editInput.blur(); // 手动失去焦点触发 finishEdit
+        }
+      });
+
+      // 删除按钮逻辑
+      closeBtn.addEventListener('click', () => tag.remove());
+
+      // 组装并插入 DOM
+      tag.appendChild(span);
+      tag.appendChild(editInput);
+      tag.appendChild(closeBtn);
+      container.insertBefore(tag, document.querySelector('.input-area'));
     }
-  }
-
-  // 触发方式 1：点击按钮触发
-  demo4Btn.addEventListener('click', function() {
-    createDemo4Tag();
-    demo4Input.focus(); // 点击后自动保持焦点，方便连续输入
-  });
-
-  // 触发方式 2：回车键触发
-  demo4Input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      createDemo4Tag();
-    }
-  });
-
-  // 触发方式 3：失去焦点触发（防呆设计，防止忘记点添加）
-  demo4Input.addEventListener('blur', function() {
-    // 设置一点微小的延迟，防止与上面点击“添加”按钮的事件冲突引发闪烁
-    setTimeout(() => {
-      createDemo4Tag();
-    }, 100);
-  });
-
-</script>
+  </script>
 </body>
 </html>
