@@ -4,8 +4,10 @@ import {
   Cable,
   CircleDashed,
   Database,
+  Plus,
   Sparkles,
   SquareTerminal,
+  Trash2,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { type DevelopmentAiPayload } from './DevelopmentModule'
@@ -142,6 +144,37 @@ const defaultTable: TableResource = {
   status: 'ready',
 }
 
+function getTableDatabase(target: string): string {
+  const parts = target.split('.').filter(Boolean)
+  return parts[0] ?? target
+}
+
+function buildDraftModelSql(source: string): string {
+  return `SELECT
+  *
+FROM ${source}
+LIMIT 100;`
+}
+
+function createDevelopmentDraftTable(database: string): TableResource {
+  const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 6)
+  const name = `model_${suffix}`
+  const source = `${database}.stg_${suffix}_source`
+
+  return {
+    id: name,
+    name,
+    type: 'development',
+    source,
+    target: `${database}.${name}`,
+    mappings: [],
+    materializationStrategy: 'view',
+    scheduleCron: 'Daily',
+    sql: buildDraftModelSql(source),
+    status: 'draft',
+  }
+}
+
 const defaultDevTable: TableResource = {
   id: 'dim_user_profile',
   name: 'dim_user_profile',
@@ -272,6 +305,97 @@ ORDER BY total_order_amount DESC;`,
   status: 'ready',
 }
 
+const defaultAdsDailyRevenueOverview: TableResource = {
+  id: 'ads_daily_revenue_overview',
+  name: 'ads_daily_revenue_overview',
+  type: 'development',
+  source: 'ecommerce_dw.dwd_order_detail',
+  target: 'analytics_mart.ads_daily_revenue_overview',
+  mappings: [],
+  materializationStrategy: 'table',
+  scheduleCron: '0 4 * * *',
+  sql: `SELECT
+  dt,
+  COUNT(DISTINCT order_id) AS order_cnt,
+  COUNT(DISTINCT user_id) AS buyer_cnt,
+  SUM(amount) AS revenue
+FROM ecommerce_dw.dwd_order_detail
+WHERE dt >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
+GROUP BY dt
+ORDER BY dt DESC;`,
+  status: 'ready',
+}
+
+const defaultDwsProductConversionSummary: TableResource = {
+  id: 'dws_product_conversion_summary',
+  name: 'dws_product_conversion_summary',
+  type: 'development',
+  source: 'analytics_mart.stg_product_behavior',
+  target: 'analytics_mart.dws_product_conversion_summary',
+  mappings: [],
+  materializationStrategy: 'view',
+  scheduleCron: '0 6 * * *',
+  sql: `SELECT
+  product_id,
+  channel,
+  SUM(exposure_uv) AS exposure_uv,
+  SUM(click_uv) AS click_uv,
+  SUM(pay_uv) AS pay_uv,
+  ROUND(SUM(pay_uv) / NULLIF(SUM(click_uv), 0), 4) AS pay_conversion_rate
+FROM analytics_mart.stg_product_behavior
+WHERE stat_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+GROUP BY product_id, channel
+ORDER BY pay_conversion_rate DESC;`,
+  status: 'ready',
+}
+
+const defaultDimStoreSnapshot: TableResource = {
+  id: 'dim_store_snapshot',
+  name: 'dim_store_snapshot',
+  type: 'development',
+  source: 'crm_analytics.stg_store_profile',
+  target: 'crm_analytics.dim_store_snapshot',
+  mappings: [],
+  materializationStrategy: 'view',
+  scheduleCron: '0 5 * * *',
+  sql: `SELECT
+  store_id,
+  store_name,
+  region,
+  city,
+  owner_name,
+  is_active,
+  updated_at
+FROM crm_analytics.stg_store_profile
+WHERE updated_at >= DATE_SUB(CURRENT_DATE, INTERVAL 90 DAY);`,
+  status: 'ready',
+}
+
+const defaultDmCustomerValueBand: TableResource = {
+  id: 'dm_customer_value_band',
+  name: 'dm_customer_value_band',
+  type: 'development',
+  source: 'crm_analytics.dwd_customer_orders',
+  target: 'crm_analytics.dm_customer_value_band',
+  mappings: [],
+  materializationStrategy: 'table',
+  scheduleCron: '0 3 * * *',
+  sql: `SELECT
+  customer_id,
+  SUM(order_amount) AS total_amount_90d,
+  COUNT(DISTINCT order_id) AS order_cnt_90d,
+  CASE
+    WHEN SUM(order_amount) >= 20000 THEN 'S'
+    WHEN SUM(order_amount) >= 5000 THEN 'A'
+    WHEN SUM(order_amount) >= 1000 THEN 'B'
+    ELSE 'C'
+  END AS value_band
+FROM crm_analytics.dwd_customer_orders
+WHERE order_date >= DATE_SUB(CURRENT_DATE, INTERVAL 90 DAY)
+GROUP BY customer_id;`,
+  status: 'ready',
+}
+
 const SIDEBAR_PANEL_CLASS = 'rounded-2xl border border-white/10 bg-white/[0.03]'
 const SIDEBAR_ITEM_BASE_CLASS =
   'w-full rounded-xl border px-3 py-2 text-left transition'
@@ -314,6 +438,10 @@ function Layout() {
     defaultDevTable,
     defaultDwdOrderDetail,
     defaultDwsRegionalUserActivitySummary,
+    defaultAdsDailyRevenueOverview,
+    defaultDwsProductConversionSummary,
+    defaultDimStoreSnapshot,
+    defaultDmCustomerValueBand,
   ])
   const [dataSources, setDataSources] = useState<DataSourceResource[]>([
     {
@@ -336,6 +464,8 @@ function Layout() {
   const [devDataSourceId, setDevDataSourceId] = useState(dataSources[0]?.id ?? 'mysql_seed')
   const [expandedDatabases, setExpandedDatabases] = useState<Record<string, boolean>>({
     ecommerce_dw: true,
+    analytics_mart: true,
+    crm_analytics: true,
   })
   const [commandInput, setCommandInput] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -365,15 +495,34 @@ function Layout() {
     () => tables.find((table) => table.id === activeTableId) ?? tables[0],
     [activeTableId, tables],
   )
+  const developmentTables = useMemo(
+    () => tables.filter((table) => table.type === 'development'),
+    [tables],
+  )
+  const firstDevelopmentTableId = developmentTables[0]?.id ?? null
+  const developmentDatabases = useMemo(
+    () =>
+      Array.from(
+        new Set(developmentTables.map((table) => getTableDatabase(table.target)).filter(Boolean)),
+      ).sort((a, b) => a.localeCompare(b)),
+    [developmentTables],
+  )
+  const preferredDevelopmentDatabase =
+    activeTable.type === 'development'
+      ? getTableDatabase(activeTable.target)
+      : developmentDatabases[0] ?? devState.database
 
   useEffect(() => {
-    // 模拟“没有注册表”的业务：进入 develop 时确保当前表处于 development
-    if (activeApp === 'develop' && activeTable.type !== 'development') {
-      setActiveTableId(defaultDevTable.id)
-      setIsEditing(false)
-      setDevAiPayload(null)
-    }
-  }, [activeApp, activeTable.type])
+    if (activeApp !== 'develop') return
+    if (!firstDevelopmentTableId) return
+    const hasActiveDevelopmentTable = tables.some(
+      (table) => table.id === activeTableId && table.type === 'development',
+    )
+    if (hasActiveDevelopmentTable) return
+    setActiveTableId(firstDevelopmentTableId)
+    setIsEditing(false)
+    setDevAiPayload(null)
+  }, [activeApp, activeTableId, firstDevelopmentTableId, tables])
 
   useEffect(() => {
     if (isEditing) return
@@ -454,6 +603,54 @@ function Layout() {
       ?? connectionResources[0],
     [activeConnectionId, connectionResources],
   )
+
+  const createDevelopmentModel = (database: string) => {
+    const nextTable = createDevelopmentDraftTable(database)
+    const nextState: DbtRealState = {
+      sql: nextTable.sql,
+      tableName: nextTable.name,
+      database,
+      materialization: (nextTable.materializationStrategy ?? 'view') as MaterializationMode,
+      schedule: nextTable.scheduleCron ?? 'Daily',
+    }
+
+    setTables((prev) => [...prev, nextTable])
+    setExpandedDatabases((prev) => ({ ...prev, [database]: true }))
+    prevActiveTableIdRef.current = nextTable.id
+    setActiveTableId(nextTable.id)
+    setActiveApp('develop')
+    setDevAiPayload(null)
+    setIsEditing(true)
+    setUnsavedTableIds((prev) => ({ ...prev, [nextTable.id]: true }))
+    setDevState(nextState)
+    setDevCommittedState(nextState)
+  }
+
+  const deleteDevelopmentModel = (tableId: string) => {
+    if (developmentTables.length <= 1) return
+
+    const remainingDevelopmentTables = developmentTables.filter((table) => table.id !== tableId)
+    const fallbackTable = activeTableId === tableId ? remainingDevelopmentTables[0] ?? null : null
+
+    setTables((prev) => prev.filter((table) => table.id !== tableId))
+    setUnsavedTableIds((prev) => {
+      const next = { ...prev }
+      delete next[tableId]
+      return next
+    })
+
+    if (!fallbackTable) return
+
+    prevActiveTableIdRef.current = fallbackTable.id
+    setExpandedDatabases((prev) => ({
+      ...prev,
+      [getTableDatabase(fallbackTable.target)]: true,
+    }))
+    setActiveTableId(fallbackTable.id)
+    setActiveApp('develop')
+    setIsEditing(false)
+    setDevAiPayload(null)
+  }
 
   const integratePipelines = useMemo<PipelineResource[]>(() => {
     const integrationTable = tables.find((table) => table.type === 'integration')
@@ -631,23 +828,38 @@ function Layout() {
       (r) => r.id === devDataSourceId || r.source === 'mock',
     )
 
-    const databases = Array.from(
-      new Set(
-        tables
-          .map((t) => t.target.split('.').filter(Boolean)[0] ?? t.target)
-          .filter((x): x is string => Boolean(x)),
-      ),
-    )
-
     const tablesInDatabase = (db: string) =>
-      tables.filter(
-        (t) => t.type === 'development' && t.target.split('.').filter(Boolean)[0] === db,
-      )
+      developmentTables
+        .filter((table) => getTableDatabase(table.target) === db)
+        .sort((a, b) => a.name.localeCompare(b.name))
 
     return (
       <div className="space-y-3">
+        <div className={cn(SIDEBAR_PANEL_CLASS, 'p-3')}>
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">
+                dbt Models
+              </p>
+              <p className="mt-1 text-xs text-slate-300">声明式模型资源树</p>
+            </div>
+            <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-[10px] text-cyan-100">
+              {developmentTables.length}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => createDevelopmentModel(preferredDevelopmentDatabase)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-300/40 bg-cyan-400/10 px-3 py-2 text-xs font-medium text-cyan-100 transition hover:bg-cyan-400/20"
+          >
+            <Plus className="h-4 w-4" />
+            新建模型
+          </button>
+        </div>
+
         {/* Context Selectors */}
-        <div className={cn('rounded-lg border border-white/10 bg-black/10 p-2')}>
+        <div className={cn(SIDEBAR_PANEL_CLASS, 'p-3')}>
           <div className="mb-3 flex items-start justify-between gap-2">
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Context</p>
@@ -692,121 +904,108 @@ function Layout() {
         </div>
 
         {/* Database-driven Tree View */}
-        <div className={cn('rounded-lg border border-white/10 bg-black/10 p-2 space-y-2')}>
-          {databases.map((db) => {
-            const expanded = expandedDatabases[db] ?? true
-            const items = tablesInDatabase(db)
-            return (
-              <div key={db} className="space-y-1">
-                <div className="group flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedDatabases((prev) => ({ ...prev, [db]: !expanded }))
-                    }
-                    className="flex items-center gap-2 rounded-md border border-white/10 bg-black/20 px-2 py-1 text-left text-[11px] text-slate-200 hover:border-cyan-300/30"
-                    title="展开/收起"
-                  >
-                    <span className="text-slate-400">{expanded ? '▾' : '▸'}</span>
-                    <span className="truncate">{db}</span>
-                  </button>
+        <div className={cn(SIDEBAR_PANEL_CLASS, 'p-2')}>
+          <div className="mb-2 px-1">
+            <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Model Tree</p>
+            <p className="mt-1 text-[11px] text-slate-400">按 Schema 分组浏览与维护模型</p>
+          </div>
 
-                  {/* hover: [+] 仅在该库下创建 Development Model */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newId = `dws_new_${crypto.randomUUID().slice(0, 8)}`
-                      const nextName = `dws_new_${newId.slice('dws_new_'.length)}`.replace(/[^a-zA-Z0-9_]/g, '_')
-                      const nextTarget = `${db}.${nextName}`
-                      const nextSource = `${db}.dwd_source_events`
-
-                      const nextTable: TableResource = {
-                        id: newId,
-                        name: nextName,
-                        type: 'development',
-                        source: nextSource,
-                        target: nextTarget,
-                        mappings: [],
-                        materializationStrategy: 'incremental',
-                        scheduleCron: 'Daily',
-                        sql: '',
-                        status: 'draft',
+          <div className="space-y-2">
+            {developmentDatabases.map((db) => {
+              const expanded = expandedDatabases[db] ?? true
+              const items = tablesInDatabase(db)
+              return (
+                <div key={db} className="space-y-1">
+                  <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedDatabases((prev) => ({ ...prev, [db]: !expanded }))
                       }
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left text-[11px] text-slate-200"
+                      title="展开/收起"
+                    >
+                      <span className="text-slate-400">{expanded ? '▾' : '▸'}</span>
+                      <span className="truncate">{db}</span>
+                    </button>
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-slate-400">
+                      {items.length}
+                    </span>
+                  </div>
 
-                      setTables((prev) => [...prev, nextTable])
-                      setActiveTableId(newId)
-                      setActiveApp('develop')
-                      setDevAiPayload(null)
-                      setIsEditing(true)
-                      setUnsavedTableIds((prev) => ({ ...prev, [newId]: true }))
-
-                      // Create Flow：清空表单与 SQL，进入开发编辑态
-                      setDevState({
-                        sql: '',
-                        tableName: '',
-                        database: db,
-                        materialization: 'incremental',
-                        schedule: 'Daily',
-                      })
-                      setDevCommittedState({
-                        sql: '',
-                        tableName: '',
-                        database: db,
-                        materialization: 'incremental',
-                        schedule: 'Daily',
-                      })
-                    }}
-                    className="ml-auto rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-cyan-200 transition hover:bg-cyan-400/10"
-                    title="+ 新建开发表"
-                  >
-                    [+]
-                  </button>
-                </div>
-
-                {expanded && (
-                  <div className="space-y-0.5">
-                    {items.map((table) => {
-                      const isActive = activeTableId === table.id
-                      return (
-                        <button
-                          key={table.id}
-                          type="button"
-                          onClick={() => {
-                            setActiveTableId(table.id)
-                            setActiveApp('develop')
-                            setIsEditing(false)
-                            setDevAiPayload(null)
-                          }}
-                          className={cn(
-                            'w-full rounded-md border-l-2 text-left transition',
-                            isActive
-                              ? 'border-cyan-400/70 bg-cyan-400/15 text-cyan-100 border-white/10'
-                              : 'border-transparent bg-black/10 text-slate-300 hover:border-cyan-300/40 hover:bg-black/20',
-                          )}
-                        >
-                          <div className="flex items-center justify-between gap-2 px-2 py-1">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <SquareTerminal className="h-3.5 w-3.5 shrink-0 text-cyan-200" />
-                              <div className="min-w-0">
-                                <div className="truncate text-[11px] font-medium leading-5">
-                                  {table.name}
+                  {expanded && (
+                    <div className="space-y-1 pl-2">
+                      {items.map((table) => {
+                        const isActive = activeTableId === table.id
+                        const canDelete = developmentTables.length > 1
+                        return (
+                          <div
+                            key={table.id}
+                            className={cn(
+                              'flex items-center gap-2 rounded-xl border transition',
+                              isActive
+                                ? 'border-cyan-300/50 bg-cyan-400/12 text-cyan-100 shadow-[0_0_0_1px_rgba(103,232,249,0.08)]'
+                                : 'border-white/10 bg-black/10 text-slate-300 hover:border-cyan-300/25 hover:bg-black/20',
+                            )}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveTableId(table.id)
+                                setActiveApp('develop')
+                                setIsEditing(false)
+                                setDevAiPayload(null)
+                              }}
+                              className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left"
+                            >
+                              <div className="flex min-w-0 flex-1 items-center gap-2">
+                                <SquareTerminal className="h-3.5 w-3.5 shrink-0 text-cyan-200" />
+                                <div className="min-w-0">
+                                  <div className="truncate text-[11px] font-medium leading-5">
+                                    {table.name}
+                                  </div>
+                                  <div className="truncate text-[10px] text-slate-500">
+                                    {table.materializationStrategy ?? 'incremental'} · {table.scheduleCron ?? 'Daily'}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            </button>
 
-                            <div className="shrink-0">
-                              {/* 纯视觉占位：避免其他文字标签干扰 */}
-                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-500/50" />
+                            <div className="flex items-center gap-2 pr-2">
+                              <span
+                                className={cn(
+                                  'rounded-full border px-1.5 py-0.5 text-[10px]',
+                                  table.status === 'draft'
+                                    ? 'border-amber-300/20 bg-amber-400/10 text-amber-200'
+                                    : 'border-emerald-300/20 bg-emerald-400/10 text-emerald-200',
+                                )}
+                              >
+                                {table.status === 'draft' ? 'Draft' : 'Ready'}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={!canDelete}
+                                onClick={() => deleteDevelopmentModel(table.id)}
+                                className={cn(
+                                  'rounded-md border p-1.5 transition',
+                                  canDelete
+                                    ? 'border-white/10 bg-white/5 text-slate-400 hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200'
+                                    : 'cursor-not-allowed border-white/5 bg-transparent text-slate-700',
+                                )}
+                                title={canDelete ? `删除 ${table.name}` : '至少保留一个模型'}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
                             </div>
                           </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
     )
@@ -1452,8 +1651,8 @@ GROUP BY customer_id;`,
 
     const targetDatabaseOptions = Array.from(
       new Set(
-        tables
-          .map((t) => t.target.split('.').filter(Boolean)[0])
+        developmentTables
+          .map((t) => getTableDatabase(t.target))
           .filter((x): x is string => Boolean(x)),
       ),
     )
@@ -1650,7 +1849,7 @@ GROUP BY customer_id;`,
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="light-theme min-h-screen bg-slate-950 text-slate-100">
       <div className="flex min-h-screen">
         <section className="flex-1 p-6">
           <div className="flex h-[calc(100vh-3rem)] overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">

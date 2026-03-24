@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --fdl-brand: #03aba0;
+  --fdl-brand-strong: #046c66;
+  --fdl-brand-soft: rgba(3, 171, 160, 0.12);
+  --fdl-brand-soft-hover: rgba(3, 171, 160, 0.18);
+  --fdl-bg: #f4f9f9;
+  --fdl-surface: #ffffff;
+  --fdl-surface-soft: #f7fbfb;
+  --fdl-border: #dbe5e7;
+  --fdl-text: #0f172a;
+  --fdl-text-secondary: #475569;
+  --fdl-text-muted: #64748b;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -22,6 +36,54 @@ body {
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
+  color: var(--fdl-text);
+  background:
+    radial-gradient(circle at top, rgba(3, 171, 160, 0.14), transparent 34%),
+    linear-gradient(180deg, #fbfefe 0%, #eef7f7 100%);
+}
+
+.sql-workbench-editor,
+.sql-workbench-editor .monaco-editor,
+.sql-workbench-editor .overflow-guard,
+.sql-workbench-editor .monaco-scrollable-element {
+  border-radius: 22px;
+}
+
+.sql-workbench-editor .margin,
+.sql-workbench-editor .monaco-editor-background,
+.sql-workbench-editor .inputarea.ime-input {
+  background: #f8fcfc !important;
+}
+
+.sql-workbench-editor .margin {
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.sql-workbench-editor .monaco-editor .current-line {
+  background: rgba(3, 171, 160, 0.08);
+  border: 0 !important;
+}
+
+.sql-workbench-editor .monaco-editor .line-numbers {
+  color: rgba(100, 116, 139, 0.84) !important;
+}
+
+.sql-workbench-editor .monaco-editor .cursor {
+  box-shadow: 0 0 12px rgba(3, 171, 160, 0.28);
+}
+
+.sql-workbench-editor .monaco-scrollable-element > .scrollbar.vertical,
+.sql-workbench-editor .monaco-scrollable-element > .scrollbar.horizontal {
+  background: transparent !important;
+}
+
+.sql-workbench-editor .monaco-scrollable-element > .scrollbar > .slider {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.45) !important;
+}
+
+.sql-workbench-editor .monaco-scrollable-element > .scrollbar > .slider:hover {
+  background: rgba(3, 171, 160, 0.38) !important;
 }
 
 /* AI 写入后的即时视觉反馈：绿底淡出 */
@@ -38,4 +100,114 @@ body {
 
 .ai-filled-flash {
   animation: ai-filled-flash 1.8s ease-out forwards;
+}
+
+.light-theme {
+  color: var(--fdl-text);
+}
+
+.light-theme [class~='text-slate-100'] {
+  color: var(--fdl-text) !important;
+}
+
+.light-theme [class~='text-slate-200'],
+.light-theme [class~='text-slate-200/90'],
+.light-theme [class~='text-slate-300'] {
+  color: var(--fdl-text-secondary) !important;
+}
+
+.light-theme [class~='text-slate-400'],
+.light-theme [class~='text-slate-500'],
+.light-theme [class~='text-slate-600/80'] {
+  color: var(--fdl-text-muted) !important;
+}
+
+.light-theme [class~='bg-slate-950'],
+.light-theme [class*='bg-slate-900/'],
+.light-theme [class*='bg-slate-950/'],
+.light-theme [class*='bg-black/'],
+.light-theme [class~='bg-gray-900/80'] {
+  background-color: var(--fdl-surface) !important;
+}
+
+.light-theme [class~='bg-[#0d1218]'] {
+  background-color: #f0f8f8 !important;
+}
+
+.light-theme [class*='bg-white/[0.0'],
+.light-theme [class~='bg-white/5'] {
+  background-color: var(--fdl-surface-soft) !important;
+}
+
+.light-theme [class*='border-white/'] {
+  border-color: var(--fdl-border) !important;
+}
+
+.light-theme [class~='border-blue-500'] {
+  border-color: var(--fdl-brand) !important;
+}
+
+.light-theme [class*='text-cyan-'] {
+  color: var(--fdl-brand-strong) !important;
+}
+
+.light-theme [class*='border-cyan-'] {
+  border-color: rgba(3, 171, 160, 0.28) !important;
+}
+
+.light-theme [class*='bg-cyan-400/'] {
+  background-color: var(--fdl-brand-soft) !important;
+}
+
+.light-theme [class*='hover:bg-cyan-400/']:hover {
+  background-color: var(--fdl-brand-soft-hover) !important;
+}
+
+.light-theme [class*='hover:border-cyan-']:hover {
+  border-color: rgba(3, 171, 160, 0.42) !important;
+}
+
+.light-theme [class*='focus:border-cyan-']:focus {
+  border-color: rgba(3, 171, 160, 0.46) !important;
+  box-shadow: 0 0 0 3px rgba(3, 171, 160, 0.1);
+}
+
+.light-theme [class*='text-emerald-'] {
+  color: #047857 !important;
+}
+
+.light-theme [class*='border-emerald-'] {
+  border-color: rgba(16, 185, 129, 0.24) !important;
+}
+
+.light-theme [class*='bg-emerald-400/'] {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+.light-theme [class*='hover:bg-emerald-400/']:hover {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+}
+
+.light-theme [class*='text-amber-'] {
+  color: #b45309 !important;
+}
+
+.light-theme [class*='border-amber-'] {
+  border-color: rgba(245, 158, 11, 0.24) !important;
+}
+
+.light-theme [class*='bg-amber-400/'] {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+}
+
+.light-theme [class*='text-violet-'] {
+  color: var(--fdl-brand-strong) !important;
+}
+
+.light-theme [class*='hover:bg-white/']:hover {
+  background-color: rgba(3, 171, 160, 0.08) !important;
+}
+
+.light-theme [class~='hover:text-slate-200/90']:hover {
+  color: var(--fdl-brand-strong) !important;
 }
